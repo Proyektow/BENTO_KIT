@@ -17,6 +17,8 @@
       --border: #dcdcd6;
       --accent: #d9381e;
       --accent-hover: #b82d16;
+      --ok: #1b7a3d;
+      --warn: #b45309;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Arial, sans-serif;
     }
@@ -51,6 +53,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
       padding-bottom: 14px;
       border-bottom: 2px solid var(--ink);
     }
@@ -90,6 +93,12 @@
       text-transform: uppercase;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .btn {
       background: var(--surface);
       border: 1px solid var(--ink);
@@ -103,12 +112,21 @@
       text-decoration: none;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
     }
 
     .btn:hover {
       background: var(--ink);
       color: var(--surface);
+    }
+
+    .btn-help {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      font-size: 0.85rem;
+      font-weight: 800;
     }
 
     .btn-accent {
@@ -123,6 +141,22 @@
       color: #ffffff;
     }
 
+    /* Banner de aviso sin conexión */
+    .offline-banner {
+      display: none;
+      background: var(--ink);
+      color: var(--surface);
+      border-left: 4px solid var(--accent);
+      padding: 10px 14px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      line-height: 1.45;
+    }
+
+    .offline-banner.show {
+      display: block;
+    }
+
     /* Cuadrícula Bento de Apps */
     .bento-grid {
       display: grid;
@@ -134,7 +168,7 @@
       background: var(--surface);
       border: 1px solid var(--ink);
       padding: 20px 18px;
-      min-height: 152px;
+      min-height: 156px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -152,10 +186,16 @@
       color: #c4c4be;
     }
 
+    .app-card:hover .conn-badge {
+      border-color: rgba(255, 255, 255, 0.3);
+      color: #e5e5e0;
+    }
+
     .app-card-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 8px;
     }
 
     .app-tag {
@@ -165,6 +205,40 @@
       color: var(--accent);
       letter-spacing: 0.06em;
       text-transform: uppercase;
+    }
+
+    .conn-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      font-weight: 700;
+      padding: 3px 6px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .conn-badge svg {
+      width: 12px;
+      height: 12px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .conn-badge.offline-ok {
+      color: var(--ok);
+      border-color: #b7dfc4;
+    }
+
+    .conn-badge.needs-net {
+      color: var(--warn);
+      border-color: #f3d4a0;
     }
 
     .app-title {
@@ -210,9 +284,18 @@
       text-transform: uppercase;
     }
 
-    .viewer-actions {
-      display: flex;
-      gap: 8px;
+    .viewer-note {
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      color: var(--warn);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 7px 10px;
+      display: none;
+    }
+
+    .viewer-note.show {
+      display: block;
     }
 
     .frame-box {
@@ -230,11 +313,72 @@
       display: block;
     }
 
+    /* Modal de información (?) */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 17, 17, 0.78);
+      z-index: 40;
+      padding: 16px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: var(--bg);
+      border: 2px solid var(--ink);
+      width: 100%;
+      max-width: 540px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-header h2 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .info-block {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      line-height: 1.55;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     footer {
       padding-top: 12px;
       border-top: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
       font-family: var(--mono);
       font-size: 0.65rem;
       color: var(--muted);
@@ -264,8 +408,16 @@
           <p>Suite de herramientas locales</p>
         </div>
       </div>
-      <button type="button" class="btn" id="homeBtn" style="display:none;">← BentoKit</button>
+      <div class="header-actions">
+        <button type="button" class="btn" id="homeBtn" style="display:none;">← BentoKit</button>
+        <button type="button" class="btn btn-help" id="helpBtn" title="Información sobre instalación y modo sin conexión" aria-label="Ayuda">?</button>
+      </div>
     </header>
+
+    <!-- Aviso dinámico si el dispositivo pierde la conexión -->
+    <div class="offline-banner" id="offlineBanner">
+      <strong>MODO SIN CONEXIÓN DETECTADO:</strong> Las herramientas marcadas con icono de Wi-Fi tachado funcionan 100 % en local si ya las abriste una vez. Las que usan GPS o motores externos requieren señal o primera carga con red.
+    </div>
 
     <!-- Menú de Apps -->
     <main class="bento-grid" id="hubGrid"></main>
@@ -278,67 +430,118 @@
           <a class="btn btn-accent" id="externalLink" href="#" target="_blank" rel="noopener">Abrir completa ↗</a>
         </div>
       </div>
+      <div class="viewer-note" id="viewerNote"></div>
       <div class="frame-box">
         <iframe id="appFrame" title="Herramienta BentoKit" allow="camera; microphone; geolocation; clipboard-write"></iframe>
       </div>
     </section>
 
     <footer>
-      <span><strong class="card-bento">BENTO</strong>KIT HUB</span>
+      <span><strong class="card-bento">BENTO</strong>KIT HUB · <span id="netStatusTxt">EN LÍNEA</span></span>
       <span>Apps activas: <strong id="appCount">7</strong></span>
     </footer>
   </div>
 
+  <!-- Modal de ayuda (?) -->
+  <div class="modal" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="helpModalTitle">Apps independientes y modo offline</h2>
+        <button type="button" class="btn" id="closeHelpBtn">Cerrar</button>
+      </div>
+
+      <div class="info-block">
+        <p><strong>1. Cada herramienta es una app independiente:</strong> Puedes abrir cualquier módulo con <em>"Abrir completa ↗"</em> e instalarlo directamente en tu pantalla de inicio o escritorio (<strong>Compartir → Añadir a pantalla de inicio</strong> en móvil, o <strong>Instalar app</strong> en la barra del navegador) para entrar sin pasar por BentoKit.</p>
+        <p><strong>2. Privacidad local:</strong> Todos tus archivos, notas, audios y claves se procesan y guardan únicamente en tu dispositivo.</p>
+      </div>
+
+      <div class="info-block">
+        <strong>Indicadores de conexión en cada tarjeta:</strong>
+        <div class="legend-row">
+          <span class="conn-badge offline-ok">
+            <svg viewBox="0 0 24 24"><line x1="2" y1="2" x2="22" y2="22"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M2 8.82a15 15 0 0 1 4.17-2.65"/><path d="M10.66 5c4.01-.36 8.14.9 11.34 3.76"/><path d="M16.85 11.25a10 10 0 0 1 2.22 1.68"/><path d="M5 13a10 10 0 0 1 5.24-2.76"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+            Offline
+          </span>
+          <span>Funciona sin internet tras abrirla al menos una vez.</span>
+        </div>
+        <div class="legend-row">
+          <span class="conn-badge needs-net">
+            <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+            Señal / Red
+          </span>
+          <span>Requiere señal GPS, mapas externos o primera descarga de motor.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
+    const ICON_WIFI_OFF = `<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="2" y1="2" x2="22" y2="22"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M2 8.82a15 15 0 0 1 4.17-2.65"/><path d="M10.66 5c4.01-.36 8.14.9 11.34 3.76"/><path d="M16.85 11.25a10 10 0 0 1 2.22 1.68"/><path d="M5 13a10 10 0 0 1 5.24-2.76"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`;
+    const ICON_WIFI_ON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`;
+
     const TOOLS = [
       {
         id: "bento-pdf",
         code: "01 · PDF",
         name: "BENTO PDF",
         desc: "Unir, organizar, dividir, comprimir y convertir documentos PDF en local.",
-        url: "https://proyektow.github.io/BENTO-PDF/"
+        url: "https://proyektow.github.io/BENTO-PDF/",
+        offlineReady: true,
+        offlineNote: ""
       },
       {
         id: "bento-folio",
         code: "02 · ESCÁNER",
         name: "Bento Folio",
         desc: "Captura y recorta documentos o DNI para exportarlos a PDF.",
-        url: "https://proyektow.github.io/BentoFolio/"
+        url: "https://proyektow.github.io/BentoFolio/",
+        offlineReady: true,
+        offlineNote: ""
       },
       {
         id: "bento-scaner-plus",
         code: "03 · LIBROS & AUTO",
         name: "Bento Scaner+",
         desc: "Escaneo 1/2 páginas, disparo automático al pasar hoja, perspectiva y mejora B/N.",
-        url: "https://proyektow.github.io/Bento_Scanner-/"
+        url: "https://proyektow.github.io/Bento_Scanner-/",
+        offlineReady: false,
+        offlineNote: "Aviso: Bento Scaner+ carga el motor óptico OpenCV la primera vez; ábrelo con conexión antes de usarlo sin red."
       },
       {
         id: "bento-claves",
         code: "04 · SEGURIDAD",
         name: "Bento Claves",
         desc: "Generador de contraseñas seguras y Vault local cifrado con clave maestra.",
-        url: "https://proyektow.github.io/Bento_claves/"
+        url: "https://proyektow.github.io/Bento_claves/",
+        offlineReady: true,
+        offlineNote: ""
       },
       {
         id: "bento-notas",
         code: "05 · APUNTES & LISTAS",
         name: "Bento Notas",
         desc: "Bloc instantáneo, fichas de usuarios/DNI/teléfono y listas reutilizables.",
-        url: "https://proyektow.github.io/Bento_Notas/"
+        url: "https://proyektow.github.io/Bento_Notas/",
+        offlineReady: true,
+        offlineNote: ""
       },
       {
         id: "bento-gps",
         code: "06 · RADAR & COCHE",
         name: "Bento GPS",
         desc: "Guarda dónde aparcas o puntos clave y vuelve con radar direccional y distancia.",
-        url: "https://proyektow.github.io/Bento_GPS/"
+        url: "https://proyektow.github.io/Bento_GPS/",
+        offlineReady: false,
+        offlineNote: "Aviso: El radar direccional funciona sin datos usando satélites GPS, pero abrir el mapa externo requiere conexión."
       },
       {
         id: "bento-voz",
         code: "07 · AUDIO",
         name: "Bento Voz",
         desc: "Grabadora local con visualización de onda, marcadores de minuto y descarga WAV.",
-        url: "https://proyektow.github.io/Bento_Voz/"
+        url: "https://proyektow.github.io/Bento_Voz/",
+        offlineReady: true,
+        offlineNote: ""
       }
     ];
 
@@ -349,12 +552,33 @@
     const hubGrid = document.getElementById("hubGrid");
     const viewer = document.getElementById("viewer");
     const viewerTitle = document.getElementById("viewerTitle");
+    const viewerNote = document.getElementById("viewerNote");
     const appFrame = document.getElementById("appFrame");
     const externalLink = document.getElementById("externalLink");
     const homeBtn = document.getElementById("homeBtn");
     const logoHome = document.getElementById("logoHome");
+    const helpModal = document.getElementById("helpModal");
 
     document.getElementById("appCount").textContent = TOOLS.length;
+
+    // Control de estado de red
+    function updateNetworkStatus() {
+      const online = navigator.onLine;
+      document.getElementById("offlineBanner").classList.toggle("show", !online);
+      const statusTxt = document.getElementById("netStatusTxt");
+      statusTxt.textContent = online ? "EN LÍNEA" : "SIN CONEXIÓN";
+      statusTxt.style.color = online ? "var(--ok)" : "var(--accent)";
+    }
+    window.addEventListener("online", updateNetworkStatus);
+    window.addEventListener("offline", updateNetworkStatus);
+    updateNetworkStatus();
+
+    // Modal de ayuda (?)
+    document.getElementById("helpBtn").onclick = () => helpModal.classList.add("open");
+    document.getElementById("closeHelpBtn").onclick = () => helpModal.classList.remove("open");
+    helpModal.addEventListener("click", (e) => {
+      if (e.target === helpModal) helpModal.classList.remove("open");
+    });
 
     function renderHub() {
       hubGrid.innerHTML = "";
@@ -362,9 +586,14 @@
         const card = document.createElement("button");
         card.type = "button";
         card.className = "app-card";
+        const badgeHtml = tool.offlineReady
+          ? `<span class="conn-badge offline-ok" title="Funciona sin conexión">${ICON_WIFI_OFF} Offline</span>`
+          : `<span class="conn-badge needs-net" title="Requiere señal GPS o conexión inicial">${ICON_WIFI_ON} Red/GPS</span>`;
+
         card.innerHTML = `
           <div class="app-card-top">
             <span class="app-tag">${tool.code}</span>
+            ${badgeHtml}
           </div>
           <div>
             <div class="app-title">${highlightBento(tool.name)}</div>
@@ -382,12 +611,21 @@
       homeBtn.style.display = "inline-flex";
       viewerTitle.innerHTML = `${tool.code} — ${highlightBento(tool.name)}`;
       externalLink.href = tool.url;
+
+      if (!navigator.onLine && tool.offlineNote) {
+        viewerNote.textContent = tool.offlineNote;
+        viewerNote.classList.add("show");
+      } else {
+        viewerNote.classList.remove("show");
+      }
+
       appFrame.src = tool.url;
     }
 
     function closeTool() {
       appFrame.src = "about:blank";
       viewer.classList.remove("active");
+      viewerNote.classList.remove("show");
       homeBtn.style.display = "none";
       hubGrid.style.display = "grid";
     }
@@ -396,6 +634,13 @@
     logoHome.onclick = closeTool;
 
     renderHub();
+
+    // Registro del Service Worker del Hub
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
   </script>
 </body>
 </html>
