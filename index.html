@@ -15,7 +15,7 @@
       --ink: #111111;
       --muted: #5e5e5a;
       --border: #dcdcd6;
-      --accent: #d9381e;       /* Naranja / bermellón BentoKit */
+      --accent: #d9381e;
       --accent-hover: #b82d16;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Arial, sans-serif;
@@ -40,7 +40,7 @@
 
     .container {
       width: 100%;
-      max-width: 780px;
+      max-width: 820px;
       padding: 24px 16px 48px;
       display: flex;
       flex-direction: column;
@@ -63,8 +63,8 @@
     }
 
     .brand-logo {
-      width: 34px;
-      height: 34px;
+      width: 36px;
+      height: 36px;
       border: 1px solid var(--ink);
       flex-shrink: 0;
     }
@@ -77,8 +77,8 @@
       line-height: 1;
     }
 
-    /* Palabra "BENTO" en naranja en el título principal */
-    .brand-bento {
+    .brand-bento,
+    .card-bento {
       color: var(--accent);
     }
 
@@ -134,7 +134,7 @@
       background: var(--surface);
       border: 1px solid var(--ink);
       padding: 20px 18px;
-      min-height: 150px;
+      min-height: 152px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -150,11 +150,6 @@
 
     .app-card:hover .app-desc {
       color: #c4c4be;
-    }
-
-    /* Mantiene "BENTO" en naranja incluso al pasar el ratón */
-    .card-bento {
-      color: var(--accent);
     }
 
     .app-card-top {
@@ -222,8 +217,8 @@
 
     .frame-box {
       width: 100%;
-      height: 76vh;
-      min-height: 520px;
+      height: 78vh;
+      min-height: 540px;
       background: var(--surface);
       border: 1px solid var(--ink);
     }
@@ -259,10 +254,16 @@
       <div class="brand" id="logoHome">
         <svg class="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
           <rect width="512" height="512" fill="#f5f5f3"/>
-          <rect x="64" y="64" width="176" height="176" fill="#ffffff" stroke="#111111" stroke-width="22"/>
-          <rect x="272" y="64" width="176" height="176" fill="#111111"/>
-          <rect x="64" y="272" width="176" height="176" fill="#ffffff" stroke="#111111" stroke-width="22"/>
-          <rect x="272" y="272" width="176" height="176" fill="#d9381e"/>
+          <circle cx="256" cy="256" r="184" fill="#ffffff" stroke="#111111" stroke-width="18"/>
+          <circle cx="256" cy="256" r="134" fill="none" stroke="#111111" stroke-width="6" stroke-dasharray="44 28"/>
+          <circle cx="256" cy="256" r="84" fill="none" stroke="#111111" stroke-width="6" stroke-dasharray="22 18"/>
+          <rect x="148" y="156" width="18" height="200" fill="#111111"/>
+          <path d="M 166 156 H 214 A 38 38 0 0 1 214 232 H 166" fill="none" stroke="#111111" stroke-width="18"/>
+          <path d="M 166 248 H 222 A 42 42 0 0 1 222 332 H 166" fill="none" stroke="#111111" stroke-width="18"/>
+          <rect x="284" y="156" width="18" height="200" fill="#111111"/>
+          <line x1="302" y1="248" x2="366" y2="168" stroke="#111111" stroke-width="18" stroke-linecap="square"/>
+          <rect x="356" y="156" width="22" height="22" fill="#111111"/>
+          <line x1="302" y1="264" x2="372" y2="352" stroke="#d9381e" stroke-width="18" stroke-linecap="square"/>
         </svg>
         <div>
           <h1><span class="brand-bento">BENTO</span>KIT</h1>
@@ -290,7 +291,7 @@
 
     <footer>
       <span><strong class="card-bento">BENTO</strong>KIT HUB</span>
-      <span>Apps activas: <strong id="appCount">2</strong></span>
+      <span>Apps activas: <strong id="appCount">3</strong></span>
     </footer>
   </div>
 
@@ -309,10 +310,16 @@
         name: "Bento Folio",
         desc: "Captura y recorta documentos o DNI para exportarlos a PDF.",
         url: "https://proyektow.github.io/Bento-Folio/"
+      },
+      {
+        id: "bento-scaner-plus",
+        code: "03 · LIBROS & AUTO",
+        name: "Bento Scaner+",
+        desc: "Escaneo 1/2 páginas, disparo automático al pasar hoja, perspectiva y mejora B/N.",
+        url: "https://proyektow.github.io/Bento_Scanner-/"
       }
     ];
 
-    // Colorea la palabra "Bento" / "BENTO" en naranja dentro de los nombres
     function highlightBento(text) {
       return text.replace(/\b(bento)\b/gi, '<span class="card-bento">$1</span>');
     }
