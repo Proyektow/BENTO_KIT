@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f5f5f3" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <title>BentoKit</title>
+  <style>
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --ink: #111111;
+      --muted: #5e5e5a;
+      --border: #dcdcd6;
+      --accent: #d9381e;
+      --accent-hover: #b82d16;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 780px;
+      padding: 24px 16px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 14px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--ink);
+      flex-shrink: 0;
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+
+    .brand p {
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      color: var(--muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+
+    .btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      padding: 7px 12px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: var(--ink);
+      color: var(--surface);
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-accent:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    /* Cuadrícula Bento de Apps */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .app-card {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 20px 18px;
+      min-height: 150px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      text-align: left;
+      transition: background-color 0.12s, color 0.12s;
+    }
+
+    .app-card:hover {
+      background: var(--ink);
+      color: var(--surface);
+    }
+
+    .app-card:hover .app-desc {
+      color: #c4c4be;
+    }
+
+    .app-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .app-tag {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .app-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-top: 14px;
+    }
+
+    .app-desc {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      line-height: 1.45;
+      margin-top: 6px;
+    }
+
+    /* Visor de App Integrada */
+    .viewer {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .viewer.active {
+      display: flex;
+    }
+
+    .viewer-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .viewer-title {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .viewer-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .frame-box {
+      width: 100%;
+      height: 76vh;
+      min-height: 520px;
+      background: var(--surface);
+      border: 1px solid var(--ink);
+    }
+
+    .frame-box iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    footer {
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 540px) {
+      .bento-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand" id="logoHome">
+        <svg class="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
+          <rect width="512" height="512" fill="#f5f5f3"/>
+          <rect x="64" y="64" width="176" height="176" fill="#ffffff" stroke="#111111" stroke-width="22"/>
+          <rect x="272" y="64" width="176" height="176" fill="#111111"/>
+          <rect x="64" y="272" width="176" height="176" fill="#ffffff" stroke="#111111" stroke-width="22"/>
+          <rect x="272" y="272" width="176" height="176" fill="#d9381e"/>
+        </svg>
+        <div>
+          <h1>BentoKit</h1>
+          <p>Suite de herramientas locales</p>
+        </div>
+      </div>
+      <button type="button" class="btn" id="homeBtn" style="display:none;">← BentoKit</button>
+    </header>
+
+    <!-- Menú de Apps -->
+    <main class="bento-grid" id="hubGrid"></main>
+
+    <!-- Visor de la App Seleccionada -->
+    <section class="viewer" id="viewer">
+      <div class="viewer-bar">
+        <span class="viewer-title" id="viewerTitle">APP</span>
+        <div class="viewer-actions">
+          <a class="btn btn-accent" id="externalLink" href="#" target="_blank" rel="noopener">Abrir completa ↗</a>
+        </div>
+      </div>
+      <div class="frame-box">
+        <iframe id="appFrame" title="Herramienta BentoKit" allow="camera; clipboard-write"></iframe>
+      </div>
+    </section>
+
+    <footer>
+      <span>BentoKit Hub</span>
+      <span>Apps activas: <strong id="appCount">2</strong></span>
+    </footer>
+  </div>
+
+  <script>
+    // Añade aquí futuras apps en un toque
+    const TOOLS = [
+      {
+        id: "bento-pdf",
+        code: "01 · PDF",
+        name: "BENTO PDF",
+        desc: "Unir, organizar, dividir, comprimir y convertir documentos PDF en local.",
+        url: "https://proyektow.github.io/BENTO-PDF/"
+      },
+      {
+        id: "escanpdf",
+        code: "02 · ESCÁNER",
+        name: "Escanpdf",
+        desc: "Captura y recorta documentos o DNI para exportarlos a PDF.",
+        url: "https://proyektow.github.io/Escanpdf/"
+      }
+    ];
+
+    const hubGrid = document.getElementById("hubGrid");
+    const viewer = document.getElementById("viewer");
+    const viewerTitle = document.getElementById("viewerTitle");
+    const appFrame = document.getElementById("appFrame");
+    const externalLink = document.getElementById("externalLink");
+    const homeBtn = document.getElementById("homeBtn");
+    const logoHome = document.getElementById("logoHome");
+
+    document.getElementById("appCount").textContent = TOOLS.length;
+
+    function renderHub() {
+      hubGrid.innerHTML = "";
+      TOOLS.forEach((tool) => {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "app-card";
+        card.innerHTML = `
+          <div class="app-card-top">
+            <span class="app-tag">${tool.code}</span>
+          </div>
+          <div>
+            <div class="app-title">${tool.name}</div>
+            <p class="app-desc">${tool.desc}</p>
+          </div>
+        `;
+        card.onclick = () => openTool(tool);
+        hubGrid.appendChild(card);
+      });
+    }
+
+    function openTool(tool) {
+      hubGrid.style.display = "none";
+      viewer.classList.add("active");
+      homeBtn.style.display = "inline-flex";
+      viewerTitle.textContent = `${tool.code} — ${tool.name}`;
+      externalLink.href = tool.url;
+      appFrame.src = tool.url;
+    }
+
+    function closeTool() {
+      appFrame.src = "about:blank";
+      viewer.classList.remove("active");
+      homeBtn.style.display = "none";
+      hubGrid.style.display = "grid";
+    }
+
+    homeBtn.onclick = closeTool;
+    logoHome.onclick = closeTool;
+
+    renderHub();
+  </script>
+</body>
+</html>
