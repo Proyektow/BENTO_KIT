@@ -15,7 +15,7 @@
       --ink: #111111;
       --muted: #5e5e5a;
       --border: #dcdcd6;
-      --accent: #d9381e;
+      --accent: #d9381e;       /* Naranja / bermellón BentoKit */
       --accent-hover: #b82d16;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Arial, sans-serif;
@@ -76,9 +76,12 @@
       text-transform: uppercase;
       line-height: 1;
     }
-.brand-bento {
+
+    /* Palabra "BENTO" en naranja en el título principal */
+    .brand-bento {
       color: var(--accent);
     }
+
     .brand p {
       font-family: var(--mono);
       font-size: 0.66rem;
@@ -148,9 +151,12 @@
     .app-card:hover .app-desc {
       color: #c4c4be;
     }
-.card-bento {
+
+    /* Mantiene "BENTO" en naranja incluso al pasar el ratón */
+    .card-bento {
       color: var(--accent);
     }
+
     .app-card-top {
       display: flex;
       justify-content: space-between;
@@ -259,7 +265,7 @@
           <rect x="272" y="272" width="176" height="176" fill="#d9381e"/>
         </svg>
         <div>
-          <h1>BentoKit</h1>
+          <h1><span class="brand-bento">BENTO</span>KIT</h1>
           <p>Suite de herramientas locales</p>
         </div>
       </div>
@@ -283,13 +289,12 @@
     </section>
 
     <footer>
-      <span>BentoKit Hub</span>
+      <span><strong class="card-bento">BENTO</strong>KIT HUB</span>
       <span>Apps activas: <strong id="appCount">2</strong></span>
     </footer>
   </div>
 
   <script>
-    // Añade aquí futuras apps en un toque
     const TOOLS = [
       {
         id: "bento-pdf",
@@ -299,16 +304,19 @@
         url: "https://proyektow.github.io/BENTO-PDF/"
       },
       {
-        id: "bentofolio",
+        id: "bento-folio",
         code: "02 · ESCÁNER",
-        name: "BENTO FOLIO",
+        name: "Bento Folio",
         desc: "Captura y recorta documentos o DNI para exportarlos a PDF.",
-        url: "https://proyektow.github.io/BentoFolio/"
+        url: "https://proyektow.github.io/Bento-Folio/"
       }
     ];
-function highlightBento(text) {
+
+    // Colorea la palabra "Bento" / "BENTO" en naranja dentro de los nombres
+    function highlightBento(text) {
       return text.replace(/\b(bento)\b/gi, '<span class="card-bento">$1</span>');
     }
+
     const hubGrid = document.getElementById("hubGrid");
     const viewer = document.getElementById("viewer");
     const viewerTitle = document.getElementById("viewerTitle");
@@ -330,7 +338,7 @@ function highlightBento(text) {
             <span class="app-tag">${tool.code}</span>
           </div>
           <div>
-            <div class="app-title">${tool.name}</div>
+            <div class="app-title">${highlightBento(tool.name)}</div>
             <p class="app-desc">${tool.desc}</p>
           </div>
         `;
@@ -343,7 +351,7 @@ function highlightBento(text) {
       hubGrid.style.display = "none";
       viewer.classList.add("active");
       homeBtn.style.display = "inline-flex";
-      viewerTitle.textContent = `${tool.code} — ${tool.name}`;
+      viewerTitle.innerHTML = `${tool.code} — ${highlightBento(tool.name)}`;
       externalLink.href = tool.url;
       appFrame.src = tool.url;
     }
