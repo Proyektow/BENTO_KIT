@@ -76,7 +76,9 @@
       text-transform: uppercase;
       line-height: 1;
     }
-
+.brand-bento {
+      color: var(--accent);
+    }
     .brand p {
       font-family: var(--mono);
       font-size: 0.66rem;
@@ -146,7 +148,9 @@
     .app-card:hover .app-desc {
       color: #c4c4be;
     }
-
+.card-bento {
+      color: var(--accent);
+    }
     .app-card-top {
       display: flex;
       justify-content: space-between;
@@ -302,7 +306,9 @@
         url: "https://proyektow.github.io/BentoFolio/"
       }
     ];
-
+function highlightBento(text) {
+      return text.replace(/\b(bento)\b/gi, '<span class="card-bento">$1</span>');
+    }
     const hubGrid = document.getElementById("hubGrid");
     const viewer = document.getElementById("viewer");
     const viewerTitle = document.getElementById("viewerTitle");
