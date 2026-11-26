@@ -1,4 +1,5 @@
-const CACHE_NAME = "bentokit-hub-v6";
+const CACHE_NAME = "bentokit-hub-v7";
+const MAP_TILE_CACHE = "bento-gps-tiles-v1";
 
 const HUB_ASSETS = [
   "./",
@@ -27,7 +28,7 @@ const SUB_APPS = [
 ];
 
 const EXTERNAL_LIBS = [
-  "https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@1.17.1/dist/pdf-lib.min.js",
+  "https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@2.5.0/dist/pdf-lib.min.js",
   "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js",
   "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js",
   "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
@@ -63,7 +64,11 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(
+        keys
+          .filter((k) => k !== CACHE_NAME && k !== MAP_TILE_CACHE)
+          .map((k) => caches.delete(k))
+      )
     )
   );
   self.clients.claim();
@@ -71,13 +76,33 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  const url = event.request.url;
+
+  if (url.includes("tile.openstreetmap.org")) {
+    event.respondWith(
+      caches.open(MAP_TILE_CACHE).then(async (tileCache) => {
+        const cachedTile = await tileCache.match(event.request);
+        if (cachedTile) return cachedTile;
+        try {
+          const netRes = await fetch(event.request);
+          if (netRes && (netRes.status === 200 || netRes.type === "opaque")) {
+            tileCache.put(event.request, netRes.clone());
+          }
+          return netRes;
+        } catch (e) {
+          return cachedTile;
+        }
+      })
+    );
+    return;
+  }
 
   const isHtml =
     event.request.mode === "navigate" ||
     event.request.destination === "document" ||
     event.request.destination === "iframe" ||
-    event.request.url.endsWith("/") ||
-    event.request.url.endsWith(".html");
+    url.endsWith("/") ||
+    url.endsWith(".html");
 
   if (isHtml) {
     event.respondWith(
