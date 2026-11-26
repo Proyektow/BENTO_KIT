@@ -1,6 +1,5 @@
-const CACHE_NAME = "bentokit-hub-v3";
+const CACHE_NAME = "bentokit-hub-v4";
 
-// Archivos propios del Hub BentoKit
 const HUB_ASSETS = [
   "./",
   "./index.html",
@@ -8,7 +7,6 @@ const HUB_ASSETS = [
   "./icon.svg"
 ];
 
-// URLs de las 8 herramientas integradas (para que funcionen dentro del iframe sin conexión)
 const SUB_APPS = [
   "https://proyektow.github.io/BENTO-PDF/",
   "https://proyektow.github.io/BENTO-PDF/index.html",
@@ -28,7 +26,6 @@ const SUB_APPS = [
   "https://proyektow.github.io/Bento_Transfer/index.html"
 ];
 
-// Librerías CDN de las apps actualizadas (BENTO PDF v2 y Bento Transfer v2)
 const EXTERNAL_LIBS = [
   "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js",
   "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js",
@@ -37,14 +34,14 @@ const EXTERNAL_LIBS = [
   "https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js",
   "https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js",
   "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js",
-  "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"
+  "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js",
+  "https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
       await cache.addAll(HUB_ASSETS);
-      // Pre-cachea en segundo plano todas las apps y librerías sin bloquear la instalación
       await Promise.allSettled(
         [...SUB_APPS, ...EXTERNAL_LIBS].map((url) =>
           fetch(url, { cache: "reload" })
@@ -70,7 +67,6 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Estrategia Network-First para HTML (garantiza versiones nuevas si hay red) y Cache-First para librerías
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
