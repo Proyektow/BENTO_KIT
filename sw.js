@@ -1,4 +1,4 @@
-const CACHE_NAME = "bentokit-hub-v5";
+const CACHE_NAME = "bentokit-hub-v6";
 
 const HUB_ASSETS = [
   "./",
@@ -27,7 +27,7 @@ const SUB_APPS = [
 ];
 
 const EXTERNAL_LIBS = [
-  "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js",
+  "https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@1.17.1/dist/pdf-lib.min.js",
   "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js",
   "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js",
   "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
@@ -35,7 +35,9 @@ const EXTERNAL_LIBS = [
   "https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js",
   "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js",
   "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js",
-  "https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"
+  "https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js",
+  "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css",
+  "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"
 ];
 
 self.addEventListener("install", (event) => {
