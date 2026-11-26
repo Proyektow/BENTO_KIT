@@ -1,4 +1,4 @@
-const CACHE_NAME = "bentokit-hub-v4";
+const CACHE_NAME = "bentokit-hub-v5";
 
 const HUB_ASSETS = [
   "./",
@@ -30,8 +30,8 @@ const EXTERNAL_LIBS = [
   "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js",
   "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js",
   "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js",
-  "https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js",
-  "https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js",
+  "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
+  "https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js",
   "https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js",
   "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js",
   "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js",
