@@ -6,11 +6,13 @@
   <meta name="theme-color" content="#f5f5f3" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-  <title>Bento GPS · Localizador, Rutas GPX y Mapa Offline</title>
+  <title>Bento GPS · Navegación 3D, AR, Rutas GPX, OTA y Mapa Offline</title>
 
-  <!-- Leaflet + QR 100 % local-friendly -->
+  <!-- Leaflet + MapLibre GL (3D Primera Persona) + QR -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 
   <style>
@@ -22,6 +24,7 @@
       --border: #dcdcd6;
       --accent: #d9381e;
       --accent-hover: #b82d16;
+      --warn: #d97706;
       --ok: #1b7a3d;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Arial, sans-serif;
@@ -41,8 +44,8 @@
 
     .container {
       width: 100%;
-      max-width: 780px;
-      padding: 20px 14px 52px;
+      max-width: 860px;
+      padding: 20px 14px 60px;
       display: flex;
       flex-direction: column;
       gap: 14px;
@@ -98,30 +101,168 @@
 
     .section-tag {
       font-family: var(--mono);
-      font-size: 0.64rem;
+      font-size: 0.65rem;
       font-weight: 800;
       color: var(--accent);
       text-transform: uppercase;
     }
 
-    /* Mapa local con estilo Bento */
+    /* Pestañas de Modo de Vista del Mapa */
+    .view-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .view-tab-btn {
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      padding: 8px 6px;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .view-tab-btn.active {
+      background: var(--ink);
+      color: var(--surface);
+      border-bottom: 3px solid var(--accent);
+    }
+
+    /* Contenedor de Mapa 2D, 3D Primera Persona y AR Cámara */
     .map-wrap {
       position: relative;
       width: 100%;
-      height: 310px;
+      height: 340px;
       border: 1px solid var(--ink);
       background: #eaeae4;
       overflow: hidden;
     }
 
-    #map {
+    #map, #map3d, #arViewContainer {
       width: 100%;
       height: 100%;
-      z-index: 1;
+    }
+
+    #map3d, #arViewContainer {
+      display: none;
     }
 
     .leaflet-tile-pane {
-      filter: grayscale(35%) contrast(106%);
+      filter: grayscale(30%) contrast(106%);
+    }
+
+    .map-wrap.night-mode .leaflet-tile-pane {
+      filter: invert(92%) hue-rotate(180deg) contrast(108%) brightness(90%);
+    }
+
+    /* Superposición Cámara AR (Realidad Aumentada) */
+    #arViewContainer {
+      position: relative;
+      background: #111111;
+    }
+
+    #arVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .ar-hud {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px;
+      pointer-events: none;
+      background: radial-gradient(circle, transparent 45%, rgba(0,0,0,0.55) 100%);
+    }
+
+    .ar-top-badge {
+      background: rgba(17, 17, 17, 0.85);
+      color: #ffffff;
+      border: 1px solid var(--accent);
+      padding: 6px 12px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .ar-arrow-wrap {
+      width: 110px;
+      height: 110px;
+      border: 2px dashed rgba(255,255,255,0.65);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(17, 17, 17, 0.35);
+    }
+
+    .ar-arrow {
+      width: 0;
+      height: 0;
+      border-left: 16px solid transparent;
+      border-right: 16px solid transparent;
+      border-bottom: 54px solid var(--accent);
+      transform-origin: 50% 68%;
+      transition: transform 0.2s ease-out;
+      filter: drop-shadow(0 0 6px rgba(0,0,0,0.8));
+    }
+
+    .ar-bottom-info {
+      background: rgba(17, 17, 17, 0.88);
+      color: #ffffff;
+      padding: 8px 14px;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      font-weight: 800;
+      border-left: 4px solid var(--ok);
+    }
+
+    /* Banner Navegación Turn-by-Turn estilo Google Maps */
+    .nav-banner {
+      display: none;
+      background: var(--ok);
+      color: #ffffff;
+      border: 2px solid var(--ink);
+      padding: 12px 14px;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-banner.active { display: flex; }
+
+    .nav-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .nav-step-main {
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .nav-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      background: rgba(0,0,0,0.2);
+      padding: 6px 10px;
     }
 
     .map-overlay-bar {
@@ -132,7 +273,7 @@
       gap: 8px;
     }
 
-    /* Telemetría altímetro y ruta */
+    /* Telemetría altímetro, luz solar y ruta */
     .telemetry-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -154,28 +295,28 @@
 
     .tele-val {
       font-family: var(--mono);
-      font-size: 0.92rem;
+      font-size: 0.88rem;
       font-weight: 800;
       color: var(--ink);
       margin-top: 2px;
     }
 
-    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
 
     .btn {
       background: var(--surface);
       border: 1px solid var(--ink);
       color: var(--ink);
-      padding: 9px 12px;
+      padding: 8px 11px;
       font-family: var(--mono);
-      font-size: 0.68rem;
+      font-size: 0.66rem;
       font-weight: 700;
       text-transform: uppercase;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 5px;
       text-decoration: none;
     }
 
@@ -197,6 +338,11 @@
     .btn-ok {
       border-color: var(--ok);
       color: var(--ok);
+    }
+
+    .btn-ok:hover:not(:disabled) {
+      background: var(--ok);
+      color: #ffffff;
     }
 
     .input, select {
@@ -280,6 +426,29 @@
       border-left: 4px solid var(--accent);
     }
 
+    .cat-tag {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border: 1px solid var(--ink);
+      background: var(--surface);
+      text-transform: uppercase;
+      margin-right: 6px;
+    }
+
+    /* Perfil de elevación SVG */
+    .ele-chart-box {
+      display: none;
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 10px;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ele-chart-box.active { display: flex; }
+
     /* Modal QR offline */
     .qr-modal {
       display: none;
@@ -318,7 +487,7 @@
 
     .park-banner.active { display: flex; }
 
-    @media (max-width: 560px) {
+    @media (max-width: 600px) {
       .telemetry-grid { grid-template-columns: repeat(2, 1fr); }
       .radar-grid { grid-template-columns: 1fr; text-align: center; }
       .compass-circle { margin: 0 auto; }
@@ -330,7 +499,7 @@
     <header>
       <div class="brand">
         <h1><span>BENTO</span> GPS</h1>
-        <p>Mapa callejero · Rutas GPX · Altímetro · Radar offline</p>
+        <p>Navegación 3D · AR · Rutas GPX · OTA · Mapa Offline</p>
       </div>
       <div class="gps-pill" id="gpsStatus">Buscando satélites...</div>
     </header>
@@ -338,84 +507,151 @@
     <!-- ALARMA ACTIVA DE PARQUÍMETRO / OTA -->
     <div class="park-banner" id="parkBanner">
       <span id="parkCountdown">Parquímetro: 00:00</span>
-      <button type="button" class="btn" id="btnCancelPark" style="padding:4px 8px; font-size:0.6rem;">Cancelar alarma</button>
+      <div class="btn-row">
+        <button type="button" class="btn btn-ok" id="btnDownloadOtaIcs" style="padding:4px 8px; font-size:0.6rem;">Aviso Calendario .ICS</button>
+        <button type="button" class="btn" id="btnCancelPark" style="padding:4px 8px; font-size:0.6rem;">Cancelar</button>
+      </div>
     </div>
 
-    <!-- 01 · MAPA LOCAL + TELEMETRÍA + TRACK GPX -->
+    <!-- BANNER ACTIVO DE NAVEGACIÓN PASO A PASO (COMO GOOGLE MAPS) -->
+    <div class="nav-banner" id="navBanner">
+      <div class="nav-top-row">
+        <div>
+          <div style="font-family:var(--mono); font-size:0.62rem; text-transform:uppercase; opacity:0.9;" id="navModeLabel">EN RUTA (COCHE)</div>
+          <div class="nav-step-main" id="navInstruction">Calculando ruta...</div>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn" id="btnVoiceNav" style="padding:5px 9px; font-size:0.62rem;">Voz: ON</button>
+          <button type="button" class="btn btn-accent" id="btnStopNav" style="padding:5px 9px; font-size:0.62rem;">Salir Ruta</button>
+        </div>
+      </div>
+      <div class="nav-meta-row">
+        <span id="navRemainingInfo">Restante: -- km · -- min</span>
+        <span id="navNextStepInfo">Siguiente: --</span>
+      </div>
+    </div>
+
+    <!-- 01 · VISOR MULTIMODO (2D / 3D PRIMERA PERSONA / CÁMARA AR) + TELEMETRÍA -->
     <section class="card">
       <div class="map-overlay-bar">
-        <span class="section-tag">01 · Mapa Callejero Local y Ruta ("Miga de Pan")</span>
+        <span class="section-tag">01 · Mapa, Navegación 3D en Primera Persona y Cámara AR</span>
         <div class="btn-row">
-          <button type="button" class="btn" id="btnCenterMe" style="padding:5px 9px; font-size:0.62rem;">Centrar en mí</button>
-          <button type="button" class="btn" id="btnCacheArea" style="padding:5px 9px; font-size:0.62rem;">Guardar zona offline</button>
+          <select id="mapStyleSelect" style="width:auto; padding:4px 8px; font-size:0.62rem;">
+            <option value="street">Callejero</option>
+            <option value="topo">Topográfico (Monte)</option>
+            <option value="night">Modo Noche</option>
+          </select>
+          <button type="button" class="btn" id="btnCenterMe" style="padding:5px 9px; font-size:0.62rem;">Centrar</button>
+          <button type="button" class="btn" id="btnCacheArea" style="padding:5px 9px; font-size:0.62rem;">Guardar Zona Offline</button>
         </div>
       </div>
 
-      <div class="map-wrap">
-        <div id="map"></div>
+      <!-- Selector de Vista: 2D / 3D Primera Persona / Cámara AR -->
+      <div class="view-tabs">
+        <button type="button" class="view-tab-btn active" data-view="2d">Mapa 2D / Offline</button>
+        <button type="button" class="view-tab-btn" data-view="3d">3D Primera Persona</button>
+        <button type="button" class="view-tab-btn" data-view="ar">Cámara AR (Calle)</button>
       </div>
 
-      <!-- Altímetro y desnivel acumulado -->
+      <div class="map-wrap" id="mapWrap">
+        <div id="map"></div>
+        <div id="map3d"></div>
+        <div id="arViewContainer">
+          <video id="arVideo" playsinline autoplay muted></video>
+          <div class="ar-hud">
+            <div class="ar-top-badge" id="arTargetLabel">Selecciona un destino para guiar en AR</div>
+            <div class="ar-arrow-wrap">
+              <div class="ar-arrow" id="arArrow"></div>
+            </div>
+            <div class="ar-bottom-info" id="arDistLabel">-- m · Apunta con el móvil</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telemetría: Altímetro, Desnivel, Luz Solar y Ruta -->
       <div class="telemetry-grid">
         <div class="tele-box">
-          <div class="tele-label">Altitud</div>
+          <div class="tele-label">Altitud / Vel.</div>
           <div class="tele-val" id="eleCurrent">-- m</div>
         </div>
         <div class="tele-box">
-          <div class="tele-label">Desnivel +</div>
-          <div class="tele-val" id="eleGain">+0 m</div>
-        </div>
-        <div class="tele-box">
-          <div class="tele-label">Desnivel -</div>
-          <div class="tele-val" id="eleLoss">-0 m</div>
+          <div class="tele-label">Desnivel + / -</div>
+          <div class="tele-val" id="eleGainLoss">+0 / -0 m</div>
         </div>
         <div class="tele-box">
           <div class="tele-label">Distancia Ruta</div>
           <div class="tele-val" id="trackDist">0 m</div>
         </div>
+        <div class="tele-box">
+          <div class="tele-label">Ocaso / Luz</div>
+          <div class="tele-val" id="sunsetInfo">--:--</div>
+        </div>
       </div>
 
       <!-- Controles de grabación de Track GPX -->
       <div class="btn-row">
-        <button type="button" class="btn btn-accent" id="btnToggleTrack">● Grabar Ruta (Miga de pan)</button>
+        <button type="button" class="btn btn-accent" id="btnToggleTrack">● Grabar Ruta GPX</button>
         <button type="button" class="btn" id="btnExportGpx" disabled>Exportar .GPX</button>
         <button type="button" class="btn" id="btnClearTrack" disabled>Limpiar Ruta</button>
       </div>
 
+      <!-- Gráfica SVG de Perfil de Elevación -->
+      <div class="ele-chart-box" id="eleChartBox">
+        <span class="section-tag">Perfil de Elevación de la Ruta Grabada</span>
+        <svg id="eleSvg" width="100%" height="70" viewBox="0 0 400 70" preserveAspectRatio="none" style="background:#fff; border:1px solid var(--border);"></svg>
+      </div>
+
       <div class="meta-mono" id="cacheStatus">
-        Consejo: Pulsa "Guardar zona offline" al aparcar o iniciar ruta para cachear el mapa sin internet.
+        Consejo: En "3D Primera Persona" el mapa se inclina y gira contigo como un GPS de coche. En "Cámara AR" ves la flecha flotando sobre la calle real.
       </div>
     </section>
 
-    <!-- 02 · MARCAR PUNTO + PARQUÍMETRO + IMPORTAR GOOGLE MAPS -->
+    <!-- 02 · BUSCADOR DE DIRECCIONES ("CÓMO LLEGAR A...") + MARCAR PUNTO + OTA -->
     <section class="card">
-      <span class="section-tag">02 · Marcar Punto, Parquímetro OTA o Importar Enlace</span>
+      <span class="section-tag">02 · Cómo Llegar a... (Buscador) y Marcar Ubicación / OTA</span>
+
+      <!-- Buscador de calles, lugares o coordenadas para navegar -->
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <input type="text" id="pinLabel" class="input" style="flex:2; min-width:170px;" placeholder="Ej: Coche aparcado, Portal, Inicio ruta..." />
+        <input type="text" id="searchDestInput" class="input" style="flex:2; min-width:190px;" placeholder="Buscar calle, plaza, ciudad o pegar enlace Google Maps..." />
+        <select id="travelProfileSelect" style="flex:1; min-width:110px;">
+          <option value="driving">En Coche</option>
+          <option value="foot">A Pie</option>
+          <option value="bike">En Bici</option>
+        </select>
+        <button type="button" class="btn btn-accent" id="btnSearchAndRoute">Cómo Llegar</button>
+      </div>
+      <div class="saved-list" id="searchGeoResults" style="display:none;"></div>
+
+      <!-- Guardar punto actual + Planta parking + Tarifa OTA -->
+      <div style="display:flex; gap:8px; flex-wrap:wrap; padding-top:8px; border-top:1px solid var(--border);">
+        <select id="pinCategorySelect" style="flex:1; min-width:115px;">
+          <option value="Coche">Coche</option>
+          <option value="Fuente">Fuente agua</option>
+          <option value="Sendero">Inicio sendero</option>
+          <option value="Mirador">Mirador / Refugio</option>
+          <option value="Peligro">Peligro / Desvío</option>
+          <option value="Punto">Otro punto</option>
+        </select>
+        <input type="text" id="pinLabel" class="input" style="flex:2; min-width:150px;" placeholder="Nombre o Planta/Columna (ej: Planta -2 B4)..." />
         <select id="parkTimerSelect" style="flex:1; min-width:130px;">
           <option value="0">Sin alarma OTA</option>
-          <option value="30">OTA · 30 min</option>
-          <option value="60">OTA · 1 hora</option>
-          <option value="90">OTA · 1h 30m</option>
-          <option value="120">OTA · 2 horas</option>
+          <option value="30">OTA 30m (~0,45€)</option>
+          <option value="60">OTA 1h (~0,95€)</option>
+          <option value="90">OTA 1h30 (~1,50€)</option>
+          <option value="120">OTA 2h (~2,15€)</option>
         </select>
-        <button type="button" class="btn btn-accent" id="btnSaveHere">Guardar Ubicación</button>
-      </div>
-
-      <!-- Importar desde enlace de Google Maps o coordenadas -->
-      <div style="display:flex; gap:8px; flex-wrap:wrap; padding-top:6px; border-top:1px solid var(--border);">
-        <input type="text" id="importUrlInput" class="input" style="flex:1; min-width:200px;" placeholder="Pega enlace de Google Maps o coordenadas (43.2630, -2.9350)..." />
-        <button type="button" class="btn" id="btnImportCoords">Importar Destino</button>
+        <button type="button" class="btn btn-ok" id="btnSaveHere">Guardar Aquí</button>
       </div>
     </section>
 
-    <!-- 03 · RADAR DE GUIADO OFFLINE + BÚSQUEDA POR PROXIMIDAD + QR -->
+    <!-- 03 · RADAR DE GUIADO OFFLINE + COORDENADAS RESCATE + QR -->
     <section class="card" id="radarCard" style="display:none;">
       <div class="map-overlay-bar">
-        <span class="section-tag">03 · Guiado Directo al Destino</span>
-        <button type="button" class="btn" id="btnBeepSearch" style="padding:5px 9px; font-size:0.62rem;">
-          Sonar proximidad: OFF
-        </button>
+        <span class="section-tag">03 · Guiado al Destino Seleccionado</span>
+        <div class="btn-row">
+          <button type="button" class="btn btn-accent" id="btnStartTurnByTurn" style="padding:5px 10px; font-size:0.62rem;">Iniciar Ruta Guiada</button>
+          <button type="button" class="btn" id="btnBeepSearch" style="padding:5px 9px; font-size:0.62rem;">Sonar: OFF</button>
+        </div>
       </div>
 
       <div class="radar-grid">
@@ -426,9 +662,11 @@
           <div style="font-weight:800; font-size:1rem; text-transform:uppercase;" id="targetTitle">Destino</div>
           <div class="dist-big" id="distDisplay">-- m</div>
           <div class="meta-mono" id="coordsDisplay">Calculando rumbo...</div>
+          <div class="meta-mono" id="utmDisplay" style="color:var(--ink);">UTM / MGRS: --</div>
           <div class="btn-row" style="margin-top:4px;">
-            <button type="button" class="btn btn-accent" id="btnShowGeoQr">QR Offline (Sin Red)</button>
-            <button type="button" class="btn" id="btnCopyCoords">Copiar Coords</button>
+            <button type="button" class="btn btn-accent" id="btnShowGeoQr">QR Offline</button>
+            <button type="button" class="btn" id="btnCopyEmergency">Copiar SMS / Rescate</button>
+            <button type="button" class="btn" id="btnStreetViewExt">Vista Calle 360° ↗</button>
             <a class="btn" id="extMapsLink" href="#" target="_blank" rel="noopener">Google Maps ↗</a>
           </div>
         </div>
@@ -447,26 +685,40 @@
 
     <!-- 04 · PUNTOS GUARDADOS EN LOCAL -->
     <section class="card">
-      <span class="section-tag">04 · Ubicaciones Guardadas en este Dispositivo</span>
+      <span class="section-tag">04 · Ubicaciones y Waypoints Guardados en Local</span>
       <div class="saved-list" id="savedList"></div>
     </section>
   </div>
 
   <script>
-    let currentPos = null; // { lat, lng, acc, alt }
+    let currentPos = null; // { lat, lng, acc, alt, speed }
     let headingDeg = 0;
     let map = null;
+    let baseTileLayer = null;
     let userMarker = null;
     let targetMarker = null;
-    let routeLine = null;
+    let directLine = null;
+    let navRouteLine = null;
     let trackPolyline = null;
+
+    // Mapa 3D Primera Persona (MapLibre GL)
+    let map3d = null;
+    let map3dReady = false;
+    let currentViewMode = "2d"; // '2d' | '3d' | 'ar'
+    let arStream = null;
 
     let savedPins = JSON.parse(localStorage.getItem("bento_gps_pins") || "[]");
     let activePinId = savedPins.length ? savedPins[0].id : null;
 
+    // Navegación Turn-by-Turn (OSRM)
+    let activeNavRoute = null; // { steps: [], coords: [], totalDist, totalDur }
+    let isNavigating = false;
+    let voiceNavEnabled = true;
+    let lastSpokenStepIdx = -1;
+
     // Variables Track GPX y Altímetro
     let isRecordingTrack = false;
-    let trackPoints = []; // [{ lat, lng, alt, time }]
+    let trackPoints = [];
     let totalTrackMeters = 0;
     let totalGain = 0;
     let totalLoss = 0;
@@ -483,7 +735,9 @@
     const gpsStatus = document.getElementById("gpsStatus");
     const cacheStatus = document.getElementById("cacheStatus");
 
-    // 1. Inicializar Mapa Leaflet con teselas OpenStreetMap + Cuadrícula de respaldo
+    // =========================================================================
+    // 1. INICIALIZAR MAPA 2D (LEAFLET) + CAPAS (CALLEJERO / TOPO / NOCHE)
+    // =========================================================================
     function initMap() {
       const defaultCenter = [43.2630, -2.9350];
       map = L.map("map", { zoomControl: true }).setView(defaultCenter, 15);
@@ -508,7 +762,7 @@
       });
       new GridFallback({ zIndex: 1 }).addTo(map);
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      baseTileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         zIndex: 2,
         attribution: "© OpenStreetMap"
@@ -530,14 +784,359 @@
 
       userMarker = L.marker(defaultCenter, { icon: userIcon }).addTo(map).bindPopup("Tu posición actual");
       targetMarker = L.marker(defaultCenter, { icon: targetIcon, opacity: 0 }).addTo(map);
-      routeLine = L.polyline([], { color: "#d9381e", weight: 3, dashArray: "6, 6" }).addTo(map);
+      directLine = L.polyline([], { color: "#d9381e", weight: 2, dashArray: "6, 6" }).addTo(map);
+      navRouteLine = L.polyline([], { color: "#1b7a3d", weight: 6, opacity: 0.9 }).addTo(map);
       trackPolyline = L.polyline([], { color: "#111111", weight: 4 }).addTo(map);
 
+      updateSunsetTelemetry(defaultCenter[0], defaultCenter[1]);
       renderSavedPins();
       resumeParkTimer();
     }
 
-    // 2. Precargar teselas de los alrededores (Zoom 15, 16 y 17)
+    document.getElementById("mapStyleSelect").onchange = (e) => {
+      const mode = e.target.value;
+      const wrap = document.getElementById("mapWrap");
+      wrap.classList.toggle("night-mode", mode === "night");
+      if (baseTileLayer) map.removeLayer(baseTileLayer);
+
+      if (mode === "topo") {
+        baseTileLayer = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+          maxZoom: 17,
+          zIndex: 2,
+          attribution: "© OpenTopoMap"
+        }).addTo(map);
+      } else {
+        baseTileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          zIndex: 2,
+          attribution: "© OpenStreetMap"
+        }).addTo(map);
+      }
+    };
+
+    // =========================================================================
+    // 2. CAMBIO DE VISTA: 2D / 3D PRIMERA PERSONA (MAPLIBRE) / CÁMARA AR
+    // =========================================================================
+    document.querySelectorAll(".view-tab-btn").forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelectorAll(".view-tab-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        switchViewMode(btn.dataset.view);
+      };
+    });
+
+    async function switchViewMode(mode) {
+      currentViewMode = mode;
+      const el2d = document.getElementById("map");
+      const el3d = document.getElementById("map3d");
+      const elAr = document.getElementById("arViewContainer");
+
+      // Detener cámara AR si salimos de AR
+      if (mode !== "ar" && arStream) {
+        arStream.getTracks().forEach((t) => t.stop());
+        arStream = null;
+      }
+
+      el2d.style.display = mode === "2d" ? "block" : "none";
+      el3d.style.display = mode === "3d" ? "block" : "none";
+      elAr.style.display = mode === "ar" ? "block" : "none";
+
+      if (mode === "2d" && map) {
+        setTimeout(() => map.invalidateSize(), 60);
+      } else if (mode === "3d") {
+        initMap3D();
+      } else if (mode === "ar") {
+        startArCamera();
+      }
+    }
+
+    function initMap3D() {
+      if (typeof maplibregl === "undefined") {
+        cacheStatus.textContent = "El motor 3D requiere conexión la primera vez para cargar estilos vectoriales.";
+        return;
+      }
+      const center = currentPos ? [currentPos.lng, currentPos.lat] : [-2.9350, 43.2630];
+      if (!map3d) {
+        map3d = new maplibregl.Map({
+          container: "map3d",
+          style: "https://tiles.openfreemap.org/styles/liberty",
+          center,
+          zoom: 17.2,
+          pitch: 65,
+          bearing: headingDeg || 0,
+          antialias: true
+        });
+        map3d.on("load", () => {
+          map3dReady = true;
+          update3DRouteLayer();
+        });
+      } else {
+        map3d.resize();
+        map3d.easeTo({ center, pitch: 65, bearing: headingDeg || 0, duration: 400 });
+        update3DRouteLayer();
+      }
+    }
+
+    function update3DRouteLayer() {
+      if (!map3d || !map3dReady) return;
+      const coords = activeNavRoute ? activeNavRoute.coords.map((c) => [c[1], c[0]]) : [];
+      const geojson = {
+        type: "Feature",
+        geometry: { type: "LineString", coordinates: coords }
+      };
+      if (map3d.getSource("nav-route-3d")) {
+        map3d.getSource("nav-route-3d").setData(geojson);
+      } else {
+        map3d.addSource("nav-route-3d", { type: "geojson", data: geojson });
+        map3d.addLayer({
+          id: "nav-route-3d-line",
+          type: "line",
+          source: "nav-route-3d",
+          paint: { "line-color": "#1b7a3d", "line-width": 8 }
+        });
+      }
+    }
+
+    async function startArCamera() {
+      const video = document.getElementById("arVideo");
+      try {
+        arStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        video.srcObject = arStream;
+        await video.play();
+        updateRadar();
+      } catch (e) {
+        document.getElementById("arDistLabel").textContent = "No se pudo abrir la cámara trasera.";
+      }
+    }
+
+    // =========================================================================
+    // 3. BUSCADOR DE DIRECCIONES + NAVEGACIÓN PASO A PASO (COMO GOOGLE MAPS)
+    // =========================================================================
+    document.getElementById("btnSearchAndRoute").onclick = async () => {
+      const raw = document.getElementById("searchDestInput").value.trim();
+      if (!raw) return;
+
+      // 1) Comprobar si son coordenadas directas o enlace Google Maps
+      const coordMatch = raw.match(/(-?\d{1,3}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})/);
+      if (coordMatch) {
+        const lat = parseFloat(coordMatch[1]);
+        const lng = parseFloat(coordMatch[2]);
+        setDestinationAndNavigate(`Destino (${lat.toFixed(4)}, ${lng.toFixed(4)})`, lat, lng, "Punto");
+        document.getElementById("searchDestInput").value = "";
+        return;
+      }
+
+      if (!navigator.onLine) {
+        alert("Sin conexión solo puedes introducir coordenadas numéricas (ej: 43.2630, -2.9350) o seleccionar puntos ya guardados.");
+        return;
+      }
+
+      const resBox = document.getElementById("searchGeoResults");
+      resBox.style.display = "flex";
+      resBox.innerHTML = `<div class="meta-mono">Buscando "${escapeHtml(raw)}"...</div>`;
+
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(raw)}`;
+        const res = await fetch(url);
+        const places = await res.json();
+        resBox.innerHTML = "";
+
+        if (!places.length) {
+          resBox.innerHTML = `<div class="meta-mono">No se encontraron resultados para esa dirección.</div>`;
+          return;
+        }
+
+        places.forEach((pl) => {
+          const shortName = pl.display_name.split(",").slice(0, 3).join(",");
+          const div = document.createElement("div");
+          div.className = "saved-item";
+          div.innerHTML = `
+            <div style="flex:1;">
+              <div style="font-weight:800; font-size:0.78rem;">${escapeHtml(shortName)}</div>
+              <div class="meta-mono">${escapeHtml(pl.display_name)}</div>
+            </div>
+            <button type="button" class="btn btn-accent" style="padding:6px 10px; font-size:0.62rem;">Ir Aquí</button>
+          `;
+          div.querySelector("button").onclick = () => {
+            resBox.style.display = "none";
+            document.getElementById("searchDestInput").value = "";
+            setDestinationAndNavigate(shortName, parseFloat(pl.lat), parseFloat(pl.lon), "Destino");
+          };
+          resBox.appendChild(div);
+        });
+      } catch (e) {
+        resBox.innerHTML = `<div class="meta-mono">Error al buscar la dirección.</div>`;
+      }
+    };
+
+    document.getElementById("searchDestInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("btnSearchAndRoute").click();
+    });
+
+    function setDestinationAndNavigate(name, lat, lng, category) {
+      const pin = {
+        id: Date.now(),
+        category: category || "Destino",
+        name,
+        lat,
+        lng,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      };
+      savedPins.unshift(pin);
+      activePinId = pin.id;
+      localStorage.setItem("bento_gps_pins", JSON.stringify(savedPins));
+      renderSavedPins();
+      calculateTurnByTurnRoute(lat, lng);
+    }
+
+    document.getElementById("btnStartTurnByTurn").onclick = () => {
+      const target = savedPins.find((p) => p.id === activePinId);
+      if (target) calculateTurnByTurnRoute(target.lat, target.lng);
+    };
+
+    document.getElementById("travelProfileSelect").onchange = () => {
+      if (isNavigating) {
+        const target = savedPins.find((p) => p.id === activePinId);
+        if (target) calculateTurnByTurnRoute(target.lat, target.lng);
+      }
+    };
+
+    async function calculateTurnByTurnRoute(destLat, destLng) {
+      const start = currentPos || { lat: map.getCenter().lat, lng: map.getCenter().lng };
+      const profile = document.getElementById("travelProfileSelect").value; // driving | foot | bike
+      const modeNames = { driving: "EN RUTA (COCHE)", foot: "EN RUTA (A PIE)", bike: "EN RUTA (BICI)" };
+
+      isNavigating = true;
+      lastSpokenStepIdx = -1;
+      const banner = document.getElementById("navBanner");
+      banner.classList.add("active");
+      document.getElementById("navModeLabel").textContent = modeNames[profile] || "EN RUTA";
+      document.getElementById("navInstruction").textContent = "Calculando mejor trayecto por calles...";
+
+      if (!navigator.onLine) {
+        document.getElementById("navInstruction").textContent = "Sin red: guiado directo por brújula y radar";
+        document.getElementById("navRemainingInfo").textContent = "Modo offline activo";
+        return;
+      }
+
+      try {
+        const osrmUrl = `https://router.project-osrm.org/route/v1/${profile}/${start.lng},${start.lat};${destLng},${destLat}?overview=full&geometries=geojson&steps=true`;
+        const res = await fetch(osrmUrl);
+        const data = await res.json();
+
+        if (data.code !== "Ok" || !data.routes || !data.routes.length) {
+          document.getElementById("navInstruction").textContent = "Ruta directa activa (sin trazado vial)";
+          return;
+        }
+
+        const route = data.routes[0];
+        const coords = route.geometry.coordinates.map((c) => [c[1], c[0]]);
+        const steps = (route.legs[0]?.steps || []).map((st) => ({
+          instruction: formatOsrmStep(st),
+          lat: st.maneuver.location[1],
+          lng: st.maneuver.location[0],
+          distance: st.distance
+        }));
+
+        activeNavRoute = {
+          coords,
+          steps,
+          totalDist: route.distance,
+          totalDur: route.duration
+        };
+
+        navRouteLine.setLatLngs(coords);
+        map.fitBounds(navRouteLine.getBounds(), { padding: [36, 36] });
+        update3DRouteLayer();
+        updateLiveNavigationHud();
+      } catch (e) {
+        document.getElementById("navInstruction").textContent = "Error al trazar calles; usa el radar directo.";
+      }
+    }
+
+    function formatOsrmStep(step) {
+      const type = step.maneuver?.type || "";
+      const mod = step.maneuver?.modifier || "";
+      const street = step.name ? ` hacia ${step.name}` : "";
+      const modEs = {
+        left: "a la izquierda",
+        "sharp left": "fuerte a la izquierda",
+        "slight left": "ligeramente a la izquierda",
+        right: "a la derecha",
+        "sharp right": "fuerte a la derecha",
+        "slight right": "ligeramente a la derecha",
+        straight: "recto",
+        uturn: "cambio de sentido"
+      }[mod] || "";
+
+      if (type === "arrive") return "Has llegado a tu destino";
+      if (type === "depart") return `Sal${street}`;
+      if (type === "roundabout" || type === "rotary") {
+        const exit = step.maneuver?.exit ? ` salida ${step.maneuver.exit}` : "";
+        return `En la rotonda, toma la${exit}${street}`;
+      }
+      if (type === "turn" || type === "end of road" || type === "fork") {
+        return `Gira ${modEs}${street}`.trim();
+      }
+      return `Continúa ${modEs}${street}`.trim();
+    }
+
+    function updateLiveNavigationHud() {
+      if (!isNavigating || !activeNavRoute) return;
+      const target = savedPins.find((p) => p.id === activePinId);
+      if (!target) return;
+
+      const remDist = currentPos ? calcDistance(currentPos.lat, currentPos.lng, target.lat, target.lng) : activeNavRoute.totalDist;
+      const estMins = Math.max(1, Math.round(activeNavRoute.totalDur / 60));
+      const distStr = remDist >= 1000 ? `${(remDist / 1000).toFixed(1)} km` : `${Math.round(remDist)} m`;
+      document.getElementById("navRemainingInfo").textContent = `Restante: ${distStr} · ~${estMins} min`;
+
+      // Encontrar el paso de maniobra más cercano por delante
+      let stepIdx = 0;
+      if (currentPos && activeNavRoute.steps.length > 1) {
+        let minD = Infinity;
+        activeNavRoute.steps.forEach((st, idx) => {
+          const d = calcDistance(currentPos.lat, currentPos.lng, st.lat, st.lng);
+          if (d < minD) {
+            minD = d;
+            stepIdx = idx;
+          }
+        });
+        if (minD < 25 && stepIdx + 1 < activeNavRoute.steps.length) stepIdx++;
+      }
+
+      const currentStep = activeNavRoute.steps[stepIdx];
+      const nextStep = activeNavRoute.steps[stepIdx + 1];
+      if (currentStep) {
+        document.getElementById("navInstruction").textContent = currentStep.instruction;
+        document.getElementById("navNextStepInfo").textContent = nextStep ? `Luego: ${nextStep.instruction}` : "Destino final";
+
+        if (voiceNavEnabled && stepIdx !== lastSpokenStepIdx && "speechSynthesis" in window) {
+          lastSpokenStepIdx = stepIdx;
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(currentStep.instruction);
+          utter.lang = "es-ES";
+          window.speechSynthesis.speak(utter);
+        }
+      }
+    }
+
+    document.getElementById("btnVoiceNav").onclick = () => {
+      voiceNavEnabled = !voiceNavEnabled;
+      document.getElementById("btnVoiceNav").textContent = voiceNavEnabled ? "Voz: ON" : "Voz: OFF";
+    };
+
+    document.getElementById("btnStopNav").onclick = () => {
+      isNavigating = false;
+      activeNavRoute = null;
+      navRouteLine.setLatLngs([]);
+      document.getElementById("navBanner").classList.remove("active");
+      update3DRouteLayer();
+    };
+
+    // =========================================================================
+    // 4. DESCARGA OFFLINE + CENTRAR
+    // =========================================================================
     document.getElementById("btnCacheArea").onclick = async () => {
       const center = currentPos ? { lat: currentPos.lat, lng: currentPos.lng } : map.getCenter();
       const zooms = [15, 16, 17];
@@ -575,10 +1174,40 @@
     };
 
     document.getElementById("btnCenterMe").onclick = () => {
-      if (currentPos && map) map.setView([currentPos.lat, currentPos.lng], 17);
+      if (!currentPos) return;
+      if (currentViewMode === "3d" && map3d) {
+        map3d.easeTo({ center: [currentPos.lng, currentPos.lat], pitch: 65, bearing: headingDeg || 0 });
+      } else if (map) {
+        map.setView([currentPos.lat, currentPos.lng], 17);
+      }
     };
 
-    // 3. Geolocalización continua + Altímetro + Grabación de Track GPX
+    // =========================================================================
+    // 5. GPS CONTINUO + ALTÍMETRO + PERFIL ELEVACIÓN + CÁLCULO DE OCASO
+    // =========================================================================
+    function updateSunsetTelemetry(lat, lng) {
+      // Cálculo astronómico offline simplificado de puesta de sol
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const dayOfYear = Math.floor((now - start) / 86400000);
+      const decl = 23.45 * Math.sin(((360 / 365) * (dayOfYear - 81) * Math.PI) / 180);
+      const latRad = (lat * Math.PI) / 180;
+      const declRad = (decl * Math.PI) / 180;
+      const cosH = -Math.tan(latRad) * Math.tan(declRad);
+      if (Math.abs(cosH) <= 1) {
+        const hourAngle = (Math.acos(cosH) * 180) / Math.PI / 15;
+        const tzOffset = -now.getTimezoneOffset() / 60;
+        const solarNoon = 12 - lng / 15 + tzOffset;
+        const sunsetDecimal = solarNoon + hourAngle;
+        const sH = Math.floor(sunsetDecimal);
+        const sM = Math.round((sunsetDecimal - sH) * 60);
+        const sunsetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), sH, sM);
+        const diffMins = Math.round((sunsetDate - now) / 60000);
+        const remTxt = diffMins > 0 ? `(${Math.floor(diffMins / 60)}h ${diffMins % 60}m luz)` : "(De noche)";
+        document.getElementById("sunsetInfo").textContent = `${String(sH).padStart(2, "0")}:${String(sM).padStart(2, "0")} ${remTxt}`;
+      }
+    }
+
     function startGpsWatch() {
       if (!("geolocation" in navigator)) {
         gpsStatus.textContent = "GPS no soportado";
@@ -589,27 +1218,30 @@
       navigator.geolocation.watchPosition(
         (pos) => {
           const alt = pos.coords.altitude !== null ? Math.round(pos.coords.altitude) : null;
+          const speedKmh = pos.coords.speed !== null ? Math.round(pos.coords.speed * 3.6) : null;
           currentPos = {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
             acc: Math.round(pos.coords.accuracy),
-            alt
+            alt,
+            speed: speedKmh
           };
           gpsStatus.textContent = `GPS OK (±${currentPos.acc}m)`;
           gpsStatus.classList.add("locked");
 
-          if (alt !== null) {
-            document.getElementById("eleCurrent").textContent = `${alt} m`;
-            if (isRecordingTrack && lastAlt !== null) {
+          const eleTxt = alt !== null ? `${alt} m` : "-- m";
+          document.getElementById("eleCurrent").textContent = speedKmh !== null ? `${eleTxt} · ${speedKmh}km/h` : eleTxt;
+
+          if (alt !== null && isRecordingTrack) {
+            if (lastAlt !== null) {
               const diff = alt - lastAlt;
               if (Math.abs(diff) >= 2) {
                 if (diff > 0) totalGain += diff;
                 else totalLoss += Math.abs(diff);
-                document.getElementById("eleGain").textContent = `+${totalGain} m`;
-                document.getElementById("eleLoss").textContent = `-${totalLoss} m`;
+                document.getElementById("eleGainLoss").textContent = `+${totalGain} / -${totalLoss} m`;
                 lastAlt = alt;
               }
-            } else if (isRecordingTrack && lastAlt === null) {
+            } else {
               lastAlt = alt;
             }
           }
@@ -619,10 +1251,14 @@
             if (firstFix) {
               firstFix = false;
               map.setView([currentPos.lat, currentPos.lng], 16);
+              updateSunsetTelemetry(currentPos.lat, currentPos.lng);
             }
           }
 
-          // Grabar punto de ruta cada 8 metros si el Track está activo
+          if (currentViewMode === "3d" && map3d) {
+            map3d.easeTo({ center: [currentPos.lng, currentPos.lat], bearing: headingDeg || 0, duration: 500 });
+          }
+
           if (isRecordingTrack) {
             const lastPt = trackPoints[trackPoints.length - 1];
             const stepDist = lastPt ? calcDistance(lastPt.lat, lastPt.lng, currentPos.lat, currentPos.lng) : 999;
@@ -639,10 +1275,12 @@
                 totalTrackMeters >= 1000 ? `${(totalTrackMeters / 1000).toFixed(2)} km` : `${Math.round(totalTrackMeters)} m`;
               document.getElementById("btnExportGpx").disabled = trackPoints.length < 2;
               document.getElementById("btnClearTrack").disabled = false;
+              renderElevationChart();
             }
           }
 
           updateRadar();
+          updateLiveNavigationHud();
         },
         () => {
           gpsStatus.textContent = "Activa ubicación";
@@ -650,6 +1288,28 @@
         },
         { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
       );
+    }
+
+    function renderElevationChart() {
+      const box = document.getElementById("eleChartBox");
+      const svg = document.getElementById("eleSvg");
+      if (trackPoints.length < 2) {
+        box.classList.remove("active");
+        return;
+      }
+      box.classList.add("active");
+      const alts = trackPoints.map((p) => p.alt);
+      const minA = Math.min(...alts);
+      const maxA = Math.max(...alts);
+      const span = Math.max(1, maxA - minA);
+      const ptsStr = trackPoints
+        .map((p, i) => {
+          const x = (i / (trackPoints.length - 1)) * 400;
+          const y = 62 - ((p.alt - minA) / span) * 52;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        })
+        .join(" ");
+      svg.innerHTML = `<polyline fill="none" stroke="#d9381e" stroke-width="2.5" points="${ptsStr}" />`;
     }
 
     // Controles de Ruta GPX
@@ -679,10 +1339,10 @@
       totalLoss = 0;
       lastAlt = null;
       trackPolyline.setLatLngs([]);
+      document.getElementById("eleChartBox").classList.remove("active");
       document.getElementById("trackDist").textContent = "0 m";
-      document.getElementById("eleGain").textContent = "+0 m";
-      document.getElementById("eleLoss").textContent = "-0 m";
-      document.getElementById("btnToggleTrack").textContent = "● Grabar Ruta (Miga de pan)";
+      document.getElementById("eleGainLoss").textContent = "+0 / -0 m";
+      document.getElementById("btnToggleTrack").textContent = "● Grabar Ruta GPX";
       document.getElementById("btnToggleTrack").classList.add("btn-accent");
       document.getElementById("btnExportGpx").disabled = true;
       document.getElementById("btnClearTrack").disabled = true;
@@ -692,7 +1352,8 @@
       if (trackPoints.length < 2) return;
       const trkpts = trackPoints
         .map((p) => `      <trkpt lat="${p.lat}" lon="${p.lng}"><ele>${p.alt}</ele><time>${p.time}</time></trkpt>`)
-        .join("\n");
+        .join("
+");
       const gpx = `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="BentoGPS" xmlns="http://www.topografix.com/GPX/1/1">
   <trk>
@@ -716,26 +1377,33 @@ ${trkpts}
       if (e.alpha !== null) {
         headingDeg = 360 - e.alpha;
         updateRadar();
+        if (currentViewMode === "3d" && map3d) map3d.setBearing(headingDeg);
       }
     });
     window.addEventListener("deviceorientation", (e) => {
       if (e.webkitCompassHeading !== undefined) {
         headingDeg = e.webkitCompassHeading;
         updateRadar();
+        if (currentViewMode === "3d" && map3d) map3d.setBearing(headingDeg);
       }
     });
 
-    // 4. Guardar punto + Temporizador OTA
+    // =========================================================================
+    // 6. GUARDAR WAYPOINT + PLANTA PARKING + TEMPORIZADOR OTA + .ICS
+    // =========================================================================
     document.getElementById("btnSaveHere").onclick = () => {
       if (!currentPos) {
         alert("Esperando señal GPS exacta. Muévete unos metros o espera un segundo.");
         return;
       }
+      const cat = document.getElementById("pinCategorySelect").value;
       const labelInput = document.getElementById("pinLabel");
       const parkMins = Number(document.getElementById("parkTimerSelect").value) || 0;
-      const name = labelInput.value.trim() || (parkMins > 0 ? `Coche (OTA ${parkMins}m)` : `Punto ${savedPins.length + 1}`);
+      const defaultName = parkMins > 0 ? `Coche (OTA ${parkMins}m)` : `${cat} #${savedPins.length + 1}`;
+      const name = labelInput.value.trim() || defaultName;
       const pin = {
         id: Date.now(),
+        category: cat,
         name,
         lat: currentPos.lat,
         lng: currentPos.lng,
@@ -779,6 +1447,47 @@ ${trkpts}
       }, 1000);
     }
 
+    document.getElementById("btnDownloadOtaIcs").onclick = () => {
+      if (!parkEndTime || parkEndTime <= Date.now()) return;
+      const alertDate = new Date(Math.max(Date.now() + 60000, parkEndTime - 10 * 60000));
+      const pad = (n) => String(n).padStart(2, "0");
+      const fmtUtc = (d) =>
+        `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+      const endUtc = fmtUtc(new Date(parkEndTime));
+      const startUtc = fmtUtc(alertDate);
+      const target = savedPins.find((p) => p.id === activePinId);
+      const locStr = target ? `${target.lat.toFixed(5)}, ${target.lng.toFixed(5)}` : "";
+
+      const ics = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//BentoGPS//OTA//ES",
+        "BEGIN:VEVENT",
+        `UID:ota-${Date.now()}@bentokit`,
+        `DTSTAMP:${fmtUtc(new Date())}`,
+        `DTSTART:${startUtc}`,
+        `DTEND:${endUtc}`,
+        "SUMMARY:Renovar / Retirar coche (Parquímetro OTA)",
+        `DESCRIPTION:Aviso de parquímetro BentoGPS. Ubicación: https://maps.google.com/?q=${locStr}`,
+        "BEGIN:VALARM",
+        "TRIGGER:-PT5M",
+        "ACTION:DISPLAY",
+        "DESCRIPTION:Vence el parquímetro OTA",
+        "END:VALARM",
+        "END:VEVENT",
+        "END:VCALENDAR"
+      ].join("
+");
+
+      const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Aviso_OTA_Coche.ics";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    };
+
     document.getElementById("btnCancelPark").onclick = () => {
       clearInterval(parkInterval);
       parkEndTime = 0;
@@ -786,34 +1495,35 @@ ${trkpts}
       document.getElementById("parkBanner").classList.remove("active");
     };
 
-    // 5. Importar coordenadas desde enlace Google Maps o texto
-    document.getElementById("btnImportCoords").onclick = () => {
-      const raw = document.getElementById("importUrlInput").value.trim();
-      if (!raw) return;
-      // Busca patrones como @43.2630,-2.9350 o q=43.2630,-2.9350 o 43.2630, -2.9350
-      const match = raw.match(/(-?\d{1,3}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})/);
-      if (!match) {
-        alert("No se encontraron coordenadas válidas. Pega un enlace de Google Maps con coordenadas o escribe 'lat, lng'.");
-        return;
-      }
-      const lat = parseFloat(match[1]);
-      const lng = parseFloat(match[2]);
-      const pin = {
-        id: Date.now(),
-        name: `Importado (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
-        lat,
-        lng,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      };
-      savedPins.unshift(pin);
-      activePinId = pin.id;
-      localStorage.setItem("bento_gps_pins", JSON.stringify(savedPins));
-      document.getElementById("importUrlInput").value = "";
-      renderSavedPins();
-      if (map) map.setView([lat, lng], 16);
-    };
+    // =========================================================================
+    // 7. QR OFFLINE, COORDENADAS UTM/RESCATE Y VISTA CALLE 360°
+    // =========================================================================
+    function latLngToUtmString(lat, lng) {
+      const zone = Math.floor((lng + 180) / 6) + 1;
+      const band = lat >= 0 ? "N" : "S";
+      const a = 6378137.0;
+      const f = 1 / 298.257223563;
+      const k0 = 0.9996;
+      const e2 = 2 * f - f * f;
+      const ep2 = e2 / (1 - e2);
+      const latRad = (lat * Math.PI) / 180;
+      const lngRad = (lng * Math.PI) / 180;
+      const lng0 = (((zone - 1) * 6 - 180 + 3) * Math.PI) / 180;
+      const N = a / Math.sqrt(1 - e2 * Math.sin(latRad) ** 2);
+      const T = Math.tan(latRad) ** 2;
+      const C = ep2 * Math.cos(latRad) ** 2;
+      const A = Math.cos(latRad) * (lngRad - lng0);
+      const M =
+        a *
+        ((1 - e2 / 4 - (3 * e2 ** 2) / 64) * latRad -
+          ((3 * e2) / 8 + (3 * e2 ** 2) / 32) * Math.sin(2 * latRad) +
+          ((15 * e2 ** 2) / 256) * Math.sin(4 * latRad));
+      const easting = Math.round(k0 * N * (A + ((1 - T + C) * A ** 3) / 6) + 500000);
+      let northing = Math.round(k0 * (M + N * Math.tan(latRad) * (A ** 2 / 2 + ((5 - T + 9 * C + 4 * C ** 2) * A ** 4) / 24)));
+      if (lat < 0) northing += 10000000;
+      return `UTM ${zone}${band} ${easting}E ${northing}N`;
+    }
 
-    // 6. Compartir ubicación por QR Offline y Copiar Coordenadas
     document.getElementById("btnShowGeoQr").onclick = () => {
       const target = savedPins.find((p) => p.id === activePinId);
       if (!target || typeof qrcode === "undefined") return;
@@ -844,21 +1554,33 @@ ${trkpts}
       document.getElementById("geoQrModal").classList.remove("active");
     };
 
-    document.getElementById("btnCopyCoords").onclick = () => {
+    document.getElementById("btnCopyEmergency").onclick = () => {
       const target = savedPins.find((p) => p.id === activePinId);
       if (!target) return;
-      const txt = `${target.name}: ${target.lat.toFixed(6)}, ${target.lng.toFixed(6)} (https://maps.google.com/?q=${target.lat.toFixed(6)},${target.lng.toFixed(6)})`;
+      const utm = latLngToUtmString(target.lat, target.lng);
+      const txt = `UBICACIÓN BENTOGPS (${target.name})
+Coords: ${target.lat.toFixed(6)}, ${target.lng.toFixed(6)}
+${utm}
+Mapa: https://maps.google.com/?q=${target.lat.toFixed(6)},${target.lng.toFixed(6)}`;
       navigator.clipboard.writeText(txt);
-      const btn = document.getElementById("btnCopyCoords");
+      const btn = document.getElementById("btnCopyEmergency");
       btn.textContent = "Copiado";
-      setTimeout(() => (btn.textContent = "Copiar Coords"), 1400);
+      setTimeout(() => (btn.textContent = "Copiar SMS / Rescate"), 1500);
+    };
+
+    document.getElementById("btnStreetViewExt").onclick = () => {
+      const target = savedPins.find((p) => p.id === activePinId);
+      if (!target) return;
+      // Abre vista panorámica a pie de calle (Google Street View directo sin clave API)
+      const svUrl = `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${target.lat},${target.lng}`;
+      window.open(svUrl, "_blank", "noopener");
     };
 
     // Sonar de proximidad (< 25 metros)
     document.getElementById("btnBeepSearch").onclick = () => {
       beepMode = !beepMode;
       const btn = document.getElementById("btnBeepSearch");
-      btn.textContent = beepMode ? "Sonar proximidad: ON" : "Sonar proximidad: OFF";
+      btn.textContent = beepMode ? "Sonar: ON" : "Sonar: OFF";
       btn.classList.toggle("btn-accent", beepMode);
       if (beepMode) playBeep(600, 120);
     };
@@ -888,7 +1610,7 @@ ${trkpts}
         list.innerHTML = `<div class="meta-mono">Aún no hay ubicaciones guardadas.</div>`;
         document.getElementById("radarCard").style.display = "none";
         if (targetMarker) targetMarker.setOpacity(0);
-        if (routeLine) routeLine.setLatLngs([]);
+        if (directLine) directLine.setLatLngs([]);
         return;
       }
 
@@ -898,16 +1620,23 @@ ${trkpts}
         div.className = "saved-item" + (isActive ? " active-target" : "");
         div.innerHTML = `
           <div>
-            <div style="font-weight:800; font-size:0.82rem; text-transform:uppercase;">${escapeHtml(pin.name)}</div>
+            <div><span class="cat-tag">${escapeHtml(pin.category || "Punto")}</span><strong style="font-size:0.82rem; text-transform:uppercase;">${escapeHtml(pin.name)}</strong></div>
             <div class="meta-mono">${pin.lat.toFixed(5)}, ${pin.lng.toFixed(5)} · ${pin.time}</div>
           </div>
           <div class="btn-row">
+            <button type="button" class="btn btn-ok" data-route="${pin.id}" style="padding:6px 10px; font-size:0.62rem;">Cómo llegar</button>
             <button type="button" class="btn ${isActive ? "btn-accent" : ""}" data-select="${pin.id}" style="padding:6px 10px; font-size:0.62rem;">
-              ${isActive ? "Guiando" : "Ir aquí"}
+              ${isActive ? "Activo" : "Radar"}
             </button>
             <button type="button" class="btn" data-del="${pin.id}" style="padding:6px 9px; font-size:0.62rem;">✕</button>
           </div>
         `;
+        div.querySelector("[data-route]").onclick = () => {
+          activePinId = pin.id;
+          renderSavedPins();
+          calculateTurnByTurnRoute(pin.lat, pin.lng);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        };
         div.querySelector("[data-select]").onclick = () => {
           activePinId = pin.id;
           renderSavedPins();
@@ -935,7 +1664,9 @@ ${trkpts}
 
       radarCard.style.display = "flex";
       document.getElementById("targetTitle").textContent = target.name;
+      document.getElementById("utmDisplay").textContent = latLngToUtmString(target.lat, target.lng);
       document.getElementById("extMapsLink").href = `https://www.google.com/maps/dir/?api=1&destination=${target.lat},${target.lng}`;
+      document.getElementById("arTargetLabel").textContent = `Destino: ${target.name}`;
 
       if (targetMarker) {
         targetMarker.setLatLng([target.lat, target.lng]).setOpacity(1).bindPopup(target.name);
@@ -943,8 +1674,8 @@ ${trkpts}
 
       if (!currentPos) return;
 
-      if (routeLine) {
-        routeLine.setLatLngs([
+      if (directLine) {
+        directLine.setLatLngs([
           [currentPos.lat, currentPos.lng],
           [target.lat, target.lng]
         ]);
@@ -953,14 +1684,17 @@ ${trkpts}
       const distMeters = calcDistance(currentPos.lat, currentPos.lng, target.lat, target.lng);
       const bearing = calcBearing(currentPos.lat, currentPos.lng, target.lat, target.lng);
       const relAngle = (bearing - headingDeg + 360) % 360;
+      const distTxt = distMeters >= 1000 ? `${(distMeters / 1000).toFixed(2)} km` : `${Math.round(distMeters)} m`;
 
-      document.getElementById("distDisplay").textContent =
-        distMeters >= 1000 ? `${(distMeters / 1000).toFixed(2)} km` : `${Math.round(distMeters)} m`;
+      document.getElementById("distDisplay").textContent = distTxt;
       document.getElementById("coordsDisplay").textContent =
         `Rumbo: ${Math.round(bearing)}° · Precisión GPS: ±${currentPos.acc} m`;
       document.getElementById("compassArrow").style.transform = `rotate(${relAngle}deg)`;
 
-      // Sonar acústico/vibración si estás a menos de 25 metros y está activado
+      // Actualizar HUD de Cámara AR
+      document.getElementById("arArrow").style.transform = `rotate(${relAngle}deg)`;
+      document.getElementById("arDistLabel").textContent = `${distTxt} · Rumbo ${Math.round(bearing)}°`;
+
       if (beepMode && distMeters <= 25) {
         const intervalMs = Math.max(250, distMeters * 60);
         if (Date.now() - lastBeepTs >= intervalMs) {
