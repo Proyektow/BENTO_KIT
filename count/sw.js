@@ -1,15 +1,22 @@
-const CACHE_NAME = "bento-count-v3";
+const CACHE_NAME = "bento-count-v5";
 
-const ASSETS = [
+const LOCAL_ASSETS = [
   "./",
   "./index.html",
   "./manifest.json",
   "./icon.svg"
 ];
 
+const CDN_LIBS = [
+  "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"
+];
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await cache.addAll(LOCAL_ASSETS);
+      await Promise.allSettled(CDN_LIBS.map((url) => cache.add(url)));
+    })
   );
   self.skipWaiting();
 });
@@ -25,11 +32,13 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  const url = event.request.url;
+
   const isHtml =
     event.request.mode === "navigate" ||
     event.request.destination === "document" ||
-    event.request.url.endsWith("/") ||
-    event.request.url.endsWith(".html");
+    url.endsWith("/") ||
+    url.endsWith(".html");
 
   if (isHtml) {
     event.respondWith(
@@ -50,7 +59,7 @@ self.addEventListener("fetch", (event) => {
     caches.match(event.request).then((cached) => {
       const fetchPromise = fetch(event.request)
         .then((networkRes) => {
-          if (networkRes && networkRes.status === 200) {
+          if (networkRes && (networkRes.status === 200 || networkRes.type === "opaque")) {
             const clone = networkRes.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
@@ -60,4 +69,4 @@ self.addEventListener("fetch", (event) => {
       return cached || fetchPromise;
     })
   );
-});v
+});
