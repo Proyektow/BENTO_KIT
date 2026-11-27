@@ -1,4 +1,4 @@
-const CACHE_NAME = "bentokit-hub-v7";
+const CACHE_NAME = "bentokit-hub-v8";
 const MAP_TILE_CACHE = "bento-gps-tiles-v1";
 
 const HUB_ASSETS = [
@@ -24,7 +24,11 @@ const SUB_APPS = [
   "https://proyektow.github.io/Bento_Voz/",
   "https://proyektow.github.io/Bento_Voz/index.html",
   "https://proyektow.github.io/Bento_Transfer/",
-  "https://proyektow.github.io/Bento_Transfer/index.html"
+  "https://proyektow.github.io/Bento_Transfer/index.html",
+  "https://proyektow.github.io/Bento_Count/",
+  "https://proyektow.github.io/Bento_Count/index.html",
+  "https://proyektow.github.io/Bento_Nutri/",
+  "https://proyektow.github.io/Bento_Nutri/index.html"
 ];
 
 const EXTERNAL_LIBS = [
@@ -38,7 +42,8 @@ const EXTERNAL_LIBS = [
   "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js",
   "https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js",
   "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css",
-  "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"
+  "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js",
+  "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
 ];
 
 self.addEventListener("install", (event) => {
@@ -93,6 +98,21 @@ self.addEventListener("fetch", (event) => {
           return cachedTile;
         }
       })
+    );
+    return;
+  }
+
+  if (url.includes("openfoodfacts.org")) {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return res;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
