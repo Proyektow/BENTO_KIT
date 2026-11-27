@@ -1,4 +1,4 @@
-const CACHE_NAME = "bentokit-hub-v10";
+const CACHE_NAME = "bentokit-hub-v11";
 const MAP_TILE_CACHE = "bento-gps-tiles-v1";
 
 const HUB_ASSETS = [
