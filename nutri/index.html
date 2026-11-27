@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f5f5f3" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <title>BentoNutri · Etiqueta, OCR, Comparador y Listas</title>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --ink: #111111;
+      --muted: #5e5e5a;
+      --border: #dcdcd6;
+      --accent: #d9381e;
+      --accent-hover: #b82d16;
+      --warn: #d97706;
+      --ok: #1b7a3d;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      padding: 20px 14px 56px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .brand h1 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .brand h1 span { color: var(--accent); }
+
+    .brand p {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .badge-net {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 700;
+      padding: 5px 9px;
+      border: 1px solid var(--warn);
+      color: var(--warn);
+      background: var(--surface);
+      text-transform: uppercase;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .tab-btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      padding: 10px 6px;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: var(--ink);
+      color: var(--surface);
+      border-bottom: 3px solid var(--accent);
+    }
+
+    .panel { display: none; flex-direction: column; gap: 14px; }
+    .panel.active { display: flex; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section-tag {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .desc-text {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    .input, select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 9px 10px;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      color: var(--ink);
+      outline: none;
+    }
+
+    .input:focus, select:focus {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+
+    .btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      padding: 9px 12px;
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:hover:not(:disabled) { background: var(--ink); color: var(--surface); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-accent {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-accent:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn-ok {
+      border-color: var(--ok);
+      color: var(--ok);
+    }
+
+    .btn-ok:hover:not(:disabled) {
+      background: var(--ok);
+      color: #ffffff;
+    }
+
+    /* Visor de cámara */
+    .scanner-box {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      background: #111111;
+      padding: 12px;
+      border: 1px solid var(--ink);
+    }
+
+    .scanner-box.active { display: flex; }
+
+    #nativeVideo {
+      width: 100%;
+      max-height: 260px;
+      object-fit: cover;
+      border: 2px solid var(--accent);
+      display: none;
+    }
+
+    #html5Reader {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    /* Alertas personales prioritarias */
+    .personal-alert-box {
+      display: none;
+      background: var(--accent);
+      color: #ffffff;
+      padding: 12px 14px;
+      border: 2px solid var(--ink);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .personal-alert-box.show { display: block; }
+
+    /* Cabecera producto */
+    .product-header {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .product-img {
+      width: 88px;
+      height: 88px;
+      object-fit: contain;
+      border: 1px solid var(--ink);
+      background: #ffffff;
+      padding: 4px;
+    }
+
+    .verdict-banner {
+      padding: 12px 14px;
+      border: 2px solid var(--ink);
+      font-family: var(--mono);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .verdict-good { background: #eaf7ee; border-color: var(--ok); color: var(--ok); }
+    .verdict-mid { background: #fef6e7; border-color: var(--warn); color: #9a5304; }
+    .verdict-bad { background: #fdecea; border-color: var(--accent); color: var(--accent); }
+
+    .badges-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .score-pill {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 5px 10px;
+      border: 1px solid var(--ink);
+      background: var(--bg);
+      text-transform: uppercase;
+    }
+
+    /* Tabla Nutricional Oficial tipo Envase */
+    .label-box {
+      border: 2px solid var(--ink);
+      background: #ffffff;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .label-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-bottom: 3px solid var(--ink);
+      padding-bottom: 6px;
+    }
+
+    .label-title {
+      font-size: 0.95rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .portion-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      font-weight: 700;
+    }
+
+    .nutri-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 0.74rem;
+    }
+
+    .nutri-table th {
+      text-align: right;
+      padding: 6px 8px;
+      border-bottom: 2px solid var(--ink);
+      font-size: 0.66rem;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .nutri-table th:first-child { text-align: left; }
+
+    .nutri-table td {
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--border);
+      text-align: right;
+      font-weight: 700;
+    }
+
+    .nutri-table td:first-child {
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .nutri-table tr.sub-row td:first-child {
+      padding-left: 22px;
+      font-weight: 400;
+      color: var(--muted);
+    }
+
+    .nutri-table tr.major-row td {
+      border-bottom: 2px solid var(--ink);
+      font-weight: 800;
+    }
+
+    .alert-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .alert-tag {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      padding: 7px 10px;
+      border-left: 4px solid var(--accent);
+      background: var(--bg);
+      line-height: 1.4;
+    }
+
+    .alert-tag.ok { border-left-color: var(--ok); }
+    .alert-tag.warn { border-left-color: var(--warn); }
+
+    /* Aditivos explicados */
+    .additives-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 6px;
+    }
+
+    .add-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--ink);
+      padding: 7px 9px;
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      line-height: 1.35;
+    }
+
+    .add-chip.ok { border-left-color: var(--ok); }
+    .add-chip.warn { border-left-color: var(--warn); }
+    .add-chip.bad { border-left-color: var(--accent); }
+
+    .ingredients-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 10px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      line-height: 1.5;
+      color: var(--ink);
+    }
+
+    .hl-crit {
+      background: #fdecea;
+      color: var(--accent);
+      font-weight: 800;
+      padding: 1px 4px;
+      border-bottom: 1px solid var(--accent);
+    }
+
+    /* Alternativas y Listas */
+    .alt-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .alt-item {
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      border-left: 4px solid var(--ok);
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .alt-item.mid { border-left-color: var(--warn); }
+    .alt-item.bad { border-left-color: var(--accent); }
+
+    .alt-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .alt-thumb {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+      background: #fff;
+      border: 1px solid var(--border);
+    }
+
+    .compare-box {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      border: 2px solid var(--ink);
+      background: var(--bg);
+      padding: 12px;
+      margin-top: 4px;
+    }
+
+    .compare-box.active { display: flex; }
+
+    .cmp-win { color: var(--ok); font-weight: 800; }
+    .cmp-lose { color: var(--accent); }
+
+    /* Perfil dietético checkboxes */
+    .pref-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .pref-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 10px 12px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .pref-item input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--ink);
+      color: var(--surface);
+      border-left: 4px solid var(--accent);
+      padding: 10px 16px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      z-index: 50;
+      display: none;
+    }
+
+    .toast.show { display: block; }
+
+    @media (max-width: 600px) {
+      .tabs { grid-template-columns: repeat(2, 1fr); }
+      .pref-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1><span>BENTO</span> NUTRI</h1>
+        <p>Etiqueta · OCR · Buscador · Comparador · Listas</p>
+      </div>
+      <div class="badge-net">● Cámara + API + OCR</div>
+    </header>
+
+    <nav class="tabs">
+      <button type="button" class="tab-btn active" data-tab="tab-scan">01 · Escáner / Buscar</button>
+      <button type="button" class="tab-btn" data-tab="tab-ocr">02 · OCR Etiqueta</button>
+      <button type="button" class="tab-btn" data-tab="tab-lists">03 · Listas / Historial</button>
+      <button type="button" class="tab-btn" data-tab="tab-prefs">04 · Perfil Alertas</button>
+    </nav>
+
+    <!-- ===================================================================== -->
+    <!-- 01 · ESCÁNER CÓDIGO DE BARRAS + BUSCADOR POR TEXTO + COMPARADOR       -->
+    <!-- ===================================================================== -->
+    <section class="panel active" id="tab-scan">
+      <div class="card">
+        <span class="section-tag">Supermercado, Escáner y Búsqueda por Nombre</span>
+
+        <div class="row">
+          <div style="flex:1; min-width:170px;">
+            <label style="font-family:var(--mono); font-size:0.62rem; font-weight:700; text-transform:uppercase;">Supermercado actual</label>
+            <select id="supermarketSelect">
+              <option value="">Todos los supermercados</option>
+              <option value="mercadona">Mercadona / Hacendado</option>
+              <option value="carrefour">Carrefour</option>
+              <option value="lidl">Lidl</option>
+              <option value="aldi">Aldi</option>
+              <option value="eroski">Eroski</option>
+              <option value="dia">Dia</option>
+              <option value="alcampo">Alcampo</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:8px; align-self:flex-end;">
+            <button type="button" class="btn btn-accent" id="btnStartScan">Escanear Cámara</button>
+          </div>
+        </div>
+
+        <div class="scanner-box" id="scannerBox">
+          <video id="nativeVideo" playsinline></video>
+          <div id="html5Reader"></div>
+          <button type="button" class="btn" id="btnStopScan">Cerrar cámara</button>
+        </div>
+
+        <!-- Buscar por código de barras -->
+        <div class="row">
+          <input type="text" id="barcodeInput" class="input" style="flex:1; min-width:160px;" inputmode="numeric" placeholder="Código de barras (EAN-13)..." />
+          <button type="button" class="btn" id="btnLookupCode">Leer EAN</button>
+        </div>
+
+        <!-- Buscar por texto / nombre del producto -->
+        <div class="row">
+          <input type="text" id="searchQueryInput" class="input" style="flex:1; min-width:160px;" placeholder="Buscar por nombre (ej: yogur griego, galletas avena)..." />
+          <button type="button" class="btn btn-accent" id="btnSearchText">Buscar Producto</button>
+        </div>
+
+        <div class="alt-list" id="searchResultsList" style="display:none;"></div>
+      </div>
+
+      <!-- TARJETA DE RESULTADO -->
+      <div class="card" id="resultCard" style="display:none;">
+        <!-- Aviso rojo prioritario si choca con Perfil de Alertas -->
+        <div class="personal-alert-box" id="personalAlertBox"></div>
+
+        <div class="verdict-banner" id="verdictBanner">
+          <strong id="verdictTitle" style="font-size:0.95rem; text-transform:uppercase;">ANALIZANDO...</strong>
+          <span id="verdictSubtitle" style="font-size:0.72rem;"></span>
+        </div>
+
+        <div class="product-header">
+          <img id="prodImg" class="product-img" src="" alt="Producto" style="display:none;" />
+          <div style="flex:1; min-width:200px;">
+            <div style="font-size:1.05rem; font-weight:800;" id="prodName">—</div>
+            <div class="desc-text" id="prodBrand">—</div>
+            <div class="badges-row" style="margin-top:8px;">
+              <span class="score-pill" id="badgeNutriscore">Nutri-Score: ?</span>
+              <span class="score-pill" id="badgeNova">NOVA: ?</span>
+              <span class="score-pill" id="badgeCode">EAN: —</span>
+            </div>
+            <div class="row" style="margin-top:10px;">
+              <button type="button" class="btn btn-ok" id="btnSaveApproved" style="padding:6px 10px; font-size:0.62rem;">+ Aprobado / Lista Compra</button>
+              <button type="button" class="btn" id="btnSaveBlacklisted" style="padding:6px 10px; font-size:0.62rem;">✕ Descartar (Lista Negra)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLA NUTRICIONAL OFICIAL COMPLETA TIPO ENVASE -->
+        <div class="label-box">
+          <div class="label-top">
+            <span class="label-title">Información Nutricional</span>
+            <div class="portion-control">
+              <span>Ración:</span>
+              <input type="number" id="portionGramsInput" value="100" min="1" max="2000" style="width:68px; padding:4px 6px; font-size:0.72rem; text-align:right;" />
+              <span>g / ml</span>
+            </div>
+          </div>
+          <table class="nutri-table">
+            <thead>
+              <tr>
+                <th>Valores medios</th>
+                <th>Por 100 g / ml</th>
+                <th id="portionColHeader">Por ración (100 g)</th>
+              </tr>
+            </thead>
+            <tbody id="nutriTableBody"></tbody>
+          </table>
+        </div>
+
+        <span class="section-tag">Semáforo de Ingredientes y Alérgenos</span>
+        <div class="alert-list" id="alertList"></div>
+
+        <div id="additivesSection" style="display:none; flex-direction:column; gap:8px;">
+          <span class="section-tag">Aditivos Explicados (Diccionario E-XXX)</span>
+          <div class="additives-grid" id="additivesGrid"></div>
+        </div>
+
+        <span class="section-tag">Lista completa de ingredientes</span>
+        <div class="ingredients-box" id="ingredientsText">Sin lista de ingredientes declarada.</div>
+      </div>
+
+      <!-- OPCIONES PARECIDAS Y COMPARADOR -->
+      <div class="card" id="alternativesCard" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span class="section-tag" id="altTitle">Opciones parecidas en tu supermercado</span>
+          <select id="altFilterMode" style="width:auto; padding:5px 8px; font-size:0.64rem;">
+            <option value="best">Solo mejores (Nutri-Score A/B)</option>
+            <option value="all">Todas las opciones parecidas</option>
+          </select>
+        </div>
+        <p class="desc-text" id="altSubtitle">Buscando productos similares...</p>
+        <div class="alt-list" id="altList"></div>
+
+        <!-- Tabla comparativa cara a cara -->
+        <div class="compare-box" id="compareBox">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="section-tag">Comparativa Nutricional (por 100 g)</span>
+            <button type="button" class="btn" id="btnCloseCompare" style="padding:4px 8px; font-size:0.6rem;">Cerrar</button>
+          </div>
+          <table class="nutri-table" id="compareTable"></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 02 · ESCÁNER OCR DE ETIQUETA (PRODUCTOS NUEVOS O SIN CÓDIGO)          -->
+    <!-- ===================================================================== -->
+    <section class="panel" id="tab-ocr">
+      <div class="card">
+        <span class="section-tag">Lector OCR de Ingredientes (Para productos no registrados)</span>
+        <p class="desc-text">
+          Haz una foto nítida a la lista de ingredientes del envase o pega el texto. BentoNutri detectará automáticamente azúcares ocultos, aceites refinados, aditivos críticos y alertas de tu perfil.
+        </p>
+
+        <div class="row">
+          <label class="btn btn-accent" style="cursor:pointer;">
+            Fotografiar / Subir Etiqueta
+            <input type="file" id="ocrImageInput" accept="image/*" capture="environment" hidden />
+          </label>
+          <span class="desc-text" id="ocrStatusText">Listo para analizar imagen.</span>
+        </div>
+
+        <textarea id="ocrTextArea" rows="5" class="input" placeholder="Aquí aparecerá el texto leído de la foto (también puedes escribir o pegar ingredientes manualmente)..."></textarea>
+
+        <div class="row">
+          <button type="button" class="btn btn-accent" id="btnAnalyzeOcrText">Analizar Ingredientes</button>
+          <button type="button" class="btn" id="btnClearOcr">Limpiar</button>
+        </div>
+
+        <div id="ocrResultBox" style="display:none; flex-direction:column; gap:10px; padding-top:8px; border-top:1px solid var(--border);">
+          <div class="personal-alert-box" id="ocrPersonalAlert"></div>
+          <span class="section-tag">Ingredientes críticos detectados</span>
+          <div class="alert-list" id="ocrAlertsList"></div>
+          <span class="section-tag">Texto resaltado</span>
+          <div class="ingredients-box" id="ocrHighlightedText"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 03 · LISTAS INTELIGENTES (APROBADOS, DESCARTADOS E HISTORIAL)         -->
+    <!-- ===================================================================== -->
+    <section class="panel" id="tab-lists">
+      <div class="card">
+        <span class="section-tag">✓ Lista de la Compra / Productos Aprobados</span>
+        <p class="desc-text">Productos saludables guardados para repetir en tu próxima compra (disponible sin cobertura).</p>
+        <div class="alt-list" id="approvedList"></div>
+      </div>
+
+      <div class="card">
+        <span class="section-tag">✕ Lista Negra / Productos Descartados</span>
+        <p class="desc-text">Productos que ya analizaste y preferiste evitar.</p>
+        <div class="alt-list" id="blacklistedList"></div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span class="section-tag">Historial reciente (Caché Offline)</span>
+          <button type="button" class="btn" id="btnClearHistory" style="padding:5px 9px; font-size:0.62rem;">Limpiar historial</button>
+        </div>
+        <div class="alt-list" id="historyList"></div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 04 · PERFIL DE ALERTAS PERSONALIZADO                                  -->
+    <!-- ===================================================================== -->
+    <section class="panel" id="tab-prefs">
+      <div class="card">
+        <span class="section-tag">Reglas Personales e Intolerancias</span>
+        <p class="desc-text">
+          Activa tus filtros. Si un producto escaneado o leído por OCR contiene alguno de estos elementos, saltará una alerta roja prioritaria arriba del todo.
+        </p>
+
+        <div class="pref-grid">
+          <label class="pref-item"><input type="checkbox" id="prefNoGluten" /> Sin Gluten (Celíacos)</label>
+          <label class="pref-item"><input type="checkbox" id="prefNoLactose" /> Sin Lactosa / Lácteos</label>
+          <label class="pref-item"><input type="checkbox" id="prefVegan" /> 100 % Vegano</label>
+          <label class="pref-item"><input type="checkbox" id="prefNoPalm" /> Sin Aceite de Palma</label>
+          <label class="pref-item"><input type="checkbox" id="prefLowSugar" /> Alerta Azúcar &gt; 5 g/100g</label>
+          <label class="pref-item"><input type="checkbox" id="prefHighProtein" /> Destacar Alta Proteína (≥ 15g)</label>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:5px;">
+          <label style="font-family:var(--mono); font-size:0.62rem; font-weight:700; text-transform:uppercase;">
+            Palabras prohibidas personalizadas (separadas por comas)
+          </label>
+          <input type="text" id="prefCustomWords" class="input" placeholder="Ej: fructosa, soja, cacahuete, aspartamo..." />
+        </div>
+
+        <button type="button" class="btn btn-accent" id="btnSavePrefs">Guardar Perfil de Alertas</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // Diccionario local ligero de aditivos E-XXX habituales en España
+    const ADDITIVES_DB = {
+      "E100": { name: "Curcumina (colorante natural)", risk: "ok" },
+      "E102": { name: "Tartrazina (colorante azoico)", risk: "bad" },
+      "E110": { name: "Amarillo ocaso FCF", risk: "bad" },
+      "E120": { name: "Ácido carmínico / Cochinilla", risk: "warn" },
+      "E122": { name: "Azorrubina (colorante azoico)", risk: "bad" },
+      "E124": { name: "Ponceau 4R (colorante azoico)", risk: "bad" },
+      "E129": { name: "Rojo Allura AC", risk: "bad" },
+      "E133": { name: "Azul brillante FCF", risk: "warn" },
+      "E150A": { name: "Caramelo natural", risk: "ok" },
+      "E150C": { name: "Caramelo amónico", risk: "bad" },
+      "E150D": { name: "Caramelo de sulfito amónico", risk: "bad" },
+      "E160A": { name: "Betacaroteno (natural)", risk: "ok" },
+      "E160C": { name: "Extracto de pimentón", risk: "ok" },
+      "E171": { name: "Dióxido de titanio (prohibido UE)", risk: "bad" },
+      "E200": { name: "Ácido sórbico (conservante)", risk: "ok" },
+      "E202": { name: "Sorbato potásico", risk: "warn" },
+      "E211": { name: "Benzoato sódico", risk: "bad" },
+      "E220": { name: "Dióxido de azufre / Sulfitos", risk: "warn" },
+      "E249": { name: "Nitrito potásico (embutidos)", risk: "bad" },
+      "E250": { name: "Nitrito sódico (evitar en exceso)", risk: "bad" },
+      "E251": { name: "Nitrato sódico", risk: "bad" },
+      "E252": { name: "Nitrato potásico", risk: "bad" },
+      "E260": { name: "Ácido acético (vinagre)", risk: "ok" },
+      "E270": { name: "Ácido láctico", risk: "ok" },
+      "E282": { name: "Propionato cálcico (pan molde)", risk: "warn" },
+      "E300": { name: "Ácido ascórbico (Vitamina C)", risk: "ok" },
+      "E306": { name: "Extracto rico en tocoferoles (Vit. E)", risk: "ok" },
+      "E320": { name: "BHA (antioxidante sintético)", risk: "bad" },
+      "E321": { name: "BHT (antioxidante sintético)", risk: "bad" },
+      "E322": { name: "Lecitinas (girasol / soja)", risk: "ok" },
+      "E330": { name: "Ácido cítrico", risk: "ok" },
+      "E331": { name: "Citratos de sodio", risk: "ok" },
+      "E338": { name: "Ácido fosfórico (refrescos cola)", risk: "bad" },
+      "E341": { name: "Fosfatos de calcio", risk: "warn" },
+      "E406": { name: "Agar-agar (alga natural)", risk: "ok" },
+      "E407": { name: "Carragenanos (espesante)", risk: "bad" },
+      "E410": { name: "Goma garrofín", risk: "ok" },
+      "E412": { name: "Goma guar", risk: "ok" },
+      "E415": { name: "Goma xantana", risk: "ok" },
+      "E420": { name: "Sorbitol (polialcohol)", risk: "warn" },
+      "E422": { name: "Glicerol", risk: "ok" },
+      "E440": { name: "Pectinas (fibra fruta)", risk: "ok" },
+      "E450": { name: "Difosfatos (gasificante)", risk: "warn" },
+      "E451": { name: "Trifosfatos", risk: "bad" },
+      "E460": { name: "Celulosa", risk: "ok" },
+      "E466": { name: "Carboximetilcelulosa (CMC)", risk: "bad" },
+      "E471": { name: "Mono y diglicéridos de ácidos grasos", risk: "bad" },
+      "E472E": { name: "Ésteres de monoglicéridos", risk: "bad" },
+      "E500": { name: "Carbonatos de sodio (bicarbonato)", risk: "ok" },
+      "E503": { name: "Carbonatos de amonio", risk: "ok" },
+      "E621": { name: "Glutamato monosódico (potenciador)", risk: "bad" },
+      "E627": { name: "Guanilato disódico", risk: "bad" },
+      "E631": { name: "Inosinato disódico", risk: "bad" },
+      "E950": { name: "Acesulfamo K (edulcorante)", risk: "bad" },
+      "E951": { name: "Aspartamo (edulcorante)", risk: "bad" },
+      "E952": { name: "Ciclamato", risk: "bad" },
+      "E954": { name: "Sacarina", risk: "bad" },
+      "E955": { name: "Sucralosa (edulcorante)", risk: "warn" },
+      "E960": { name: "Glucósidos de esteviol (Stevia)", risk: "ok" },
+      "E965": { name: "Maltitol (polialcohol)", risk: "warn" },
+      "E968": { name: "Eritritol", risk: "ok" }
+    };
+
+    const CRITICAL_KEYWORDS = [
+      "jarabe de glucosa", "jarabe de fructosa", "jarabe de maíz", "azúcar invertido",
+      "aceite de palma", "grasa de palma", "grasa vegetal hidrogenada", "glutamato",
+      "nitrito", "aspartamo", "acesulfamo", "maltodextrina", "dextrosa"
+    ];
+
+    let scanHistory = JSON.parse(localStorage.getItem("bentonutri_history_v2") || "[]");
+    let approvedItems = JSON.parse(localStorage.getItem("bentonutri_approved_v1") || "[]");
+    let blacklistedItems = JSON.parse(localStorage.getItem("bentonutri_blacklist_v1") || "[]");
+    let userPrefs = JSON.parse(localStorage.getItem("bentonutri_prefs_v1") || "{}");
+
+    let currentProduct = null;
+    let nativeStream = null;
+    let nativeAnimId = null;
+    let html5Scanner = null;
+
+    const superSelect = document.getElementById("supermarketSelect");
+    superSelect.value = localStorage.getItem("bentonutri_super") || "";
+    superSelect.onchange = () => {
+      localStorage.setItem("bentonutri_super", superSelect.value);
+      if (currentProduct && navigator.onLine && currentProduct.categoriesTags.length) {
+        findSimilarProducts(currentProduct);
+      }
+    };
+
+    // Cargar preferencias en UI
+    function loadPrefsUI() {
+      document.getElementById("prefNoGluten").checked = !!userPrefs.noGluten;
+      document.getElementById("prefNoLactose").checked = !!userPrefs.noLactose;
+      document.getElementById("prefVegan").checked = !!userPrefs.vegan;
+      document.getElementById("prefNoPalm").checked = !!userPrefs.noPalm;
+      document.getElementById("prefLowSugar").checked = !!userPrefs.lowSugar;
+      document.getElementById("prefHighProtein").checked = !!userPrefs.highProtein;
+      document.getElementById("prefCustomWords").value = userPrefs.customWords || "";
+    }
+    loadPrefsUI();
+
+    document.getElementById("btnSavePrefs").onclick = () => {
+      userPrefs = {
+        noGluten: document.getElementById("prefNoGluten").checked,
+        noLactose: document.getElementById("prefNoLactose").checked,
+        vegan: document.getElementById("prefVegan").checked,
+        noPalm: document.getElementById("prefNoPalm").checked,
+        lowSugar: document.getElementById("prefLowSugar").checked,
+        highProtein: document.getElementById("prefHighProtein").checked,
+        customWords: document.getElementById("prefCustomWords").value.trim()
+      };
+      localStorage.setItem("bentonutri_prefs_v1", JSON.stringify(userPrefs));
+      notify("Perfil de alertas guardado.");
+      if (currentProduct) renderProduct(currentProduct, false);
+    };
+
+    document.getElementById("altFilterMode").onchange = () => {
+      if (currentProduct && navigator.onLine && currentProduct.categoriesTags.length) {
+        findSimilarProducts(currentProduct);
+      }
+    };
+
+    document.getElementById("portionGramsInput").oninput = () => {
+      if (currentProduct) renderNutriTable(currentProduct);
+    };
+
+    function notify(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove("show"), 3400);
+    }
+
+    // Pestañas
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+        if (btn.dataset.tab === "tab-lists") renderAllLists();
+      };
+    });
+
+    // =========================================================================
+    // 01 · ESCÁNER + BUSCADOR POR TEXTO
+    // =========================================================================
+    document.getElementById("btnStartScan").onclick = async () => {
+      const box = document.getElementById("scannerBox");
+      box.classList.add("active");
+
+      if ("BarcodeDetector" in window) {
+        try {
+          const detector = new BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] });
+          const video = document.getElementById("nativeVideo");
+          document.getElementById("html5Reader").style.display = "none";
+          video.style.display = "block";
+
+          nativeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          video.srcObject = nativeStream;
+          await video.play();
+
+          const tick = async () => {
+            if (!nativeStream) return;
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+              try {
+                const codes = await detector.detect(video);
+                if (codes.length && codes[0].rawValue) {
+                  stopScanner();
+                  fetchProduct(codes[0].rawValue);
+                  return;
+                }
+              } catch (e) {}
+            }
+            nativeAnimId = requestAnimationFrame(tick);
+          };
+          nativeAnimId = requestAnimationFrame(tick);
+          return;
+        } catch (err) {}
+      }
+
+      if (window.Html5Qrcode) {
+        document.getElementById("nativeVideo").style.display = "none";
+        document.getElementById("html5Reader").style.display = "block";
+        html5Scanner = new Html5Qrcode("html5Reader");
+        html5Scanner
+          .start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 260, height: 130 } },
+            (decodedText) => {
+              stopScanner();
+              fetchProduct(decodedText);
+            },
+            () => {}
+          )
+          .catch(() => {
+            stopScanner();
+            notify("No se pudo acceder a la cámara.");
+          });
+      } else {
+        stopScanner();
+        notify("Cámara no disponible.");
+      }
+    };
+
+    function stopScanner() {
+      if (nativeAnimId) cancelAnimationFrame(nativeAnimId);
+      if (nativeStream) {
+        nativeStream.getTracks().forEach((t) => t.stop());
+        nativeStream = null;
+      }
+      if (html5Scanner) {
+        html5Scanner.stop().then(() => html5Scanner.clear()).catch(() => {});
+        html5Scanner = null;
+      }
+      document.getElementById("scannerBox").classList.remove("active");
+    }
+
+    document.getElementById("btnStopScan").onclick = stopScanner;
+
+    document.getElementById("btnLookupCode").onclick = () => {
+      const code = document.getElementById("barcodeInput").value.trim();
+      if (!code) return notify("Escribe un código de barras.");
+      fetchProduct(code);
+    };
+
+    document.getElementById("barcodeInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("btnLookupCode").click();
+    });
+
+    // Búsqueda por nombre / texto
+    document.getElementById("btnSearchText").onclick = async () => {
+      const q = document.getElementById("searchQueryInput").value.trim();
+      if (!q) return notify("Escribe el nombre de un producto.");
+      if (!navigator.onLine) return notify("Necesitas conexión para buscar por nombre.");
+
+      const listEl = document.getElementById("searchResultsList");
+      listEl.style.display = "flex";
+      listEl.innerHTML = `<div class="desc-text">Buscando "${escapeHtml(q)}"...</div>`;
+
+      const storeTag = superSelect.value;
+      let url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8&countries_tags=spain`;
+      if (storeTag) url += `&stores_tags=${encodeURIComponent(storeTag)}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const products = data.products || [];
+        listEl.innerHTML = "";
+
+        if (!products.length) {
+          listEl.innerHTML = `<div class="desc-text">No se encontraron productos con ese nombre${storeTag ? " en este supermercado" : ""}.</div>`;
+          return;
+        }
+
+        products.slice(0, 6).forEach((p) => {
+          const name = p.product_name_es || p.product_name || "Producto";
+          const ns = (p.nutriscore_grade || "?").toUpperCase();
+          const div = document.createElement("div");
+          div.className = "alt-item" + (ns === "D" || ns === "E" ? " bad" : ns === "C" ? " mid" : "");
+          div.innerHTML = `
+            <div class="alt-left">
+              ${p.image_front_small_url ? `<img class="alt-thumb" src="${p.image_front_small_url}" alt="" />` : ""}
+              <div>
+                <div style="font-weight:800; font-size:0.82rem;">${escapeHtml(name)}</div>
+                <div class="desc-text">${escapeHtml(p.brands || "")} · Nutri-Score <strong>${ns}</strong></div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-accent" style="padding:6px 10px; font-size:0.62rem;">Ver Ficha</button>
+          `;
+          div.querySelector("button").onclick = () => {
+            listEl.style.display = "none";
+            fetchProduct(p.code);
+          };
+          listEl.appendChild(div);
+        });
+      } catch (e) {
+        listEl.innerHTML = `<div class="desc-text">Error al realizar la búsqueda.</div>`;
+      }
+    };
+
+    document.getElementById("searchQueryInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("btnSearchText").click();
+    });
+
+    function parseNutriments(n = {}) {
+      const kcal = n["energy-kcal_100g"] ?? (n.energy_100g ? Math.round(n.energy_100g / 4.184) : null);
+      const kj = n["energy-kj_100g"] ?? (kcal !== null ? Math.round(kcal * 4.184) : null);
+      return {
+        kj,
+        kcal,
+        fat: n.fat_100g ?? null,
+        satFat: n["saturated-fat_100g"] ?? null,
+        carbs: n.carbohydrates_100g ?? null,
+        sugars: n.sugars_100g ?? null,
+        fiber: n.fiber_100g ?? null,
+        proteins: n.proteins_100g ?? null,
+        salt: n.salt_100g ?? null
+      };
+    }
+
+    async function fetchProduct(barcode) {
+      const cleanCode = barcode.replace(/\D/g, "");
+      document.getElementById("barcodeInput").value = cleanCode;
+      notify(`Analizando producto ${cleanCode}...`);
+
+      const cached = [...scanHistory, ...approvedItems, ...blacklistedItems].find((p) => p.code === cleanCode);
+      if (!navigator.onLine && cached) {
+        renderProduct(cached, true);
+        return;
+      }
+
+      try {
+        const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${cleanCode}.json`);
+        const data = await res.json();
+
+        if (data.status !== 1 || !data.product) {
+          if (cached) {
+            renderProduct(cached, true);
+            return;
+          }
+          notify("Producto no encontrado. Prueba el escáner OCR en la pestaña 02.");
+          return;
+        }
+
+        const p = data.product;
+        const servingMatch = String(p.serving_size || "").match(/(\d+(?:[.,]\d+)?)/);
+        const defaultServing = servingMatch ? parseFloat(servingMatch[1].replace(",", ".")) : 100;
+
+        const allergensClean = Array.isArray(p.allergens_tags)
+          ? p.allergens_tags.map((a) => a.replace(/^[a-z]{2}:/i, "").replace(/-/g, " "))
+          : [];
+
+        const additivesClean = Array.isArray(p.additives_tags)
+          ? p.additives_tags.map((a) => a.replace(/^[a-z]{2}:/i, "").toUpperCase())
+          : [];
+
+        const productObj = {
+          code: cleanCode,
+          name: p.product_name_es || p.product_name || "Producto sin nombre",
+          brand: p.brands || "Marca desconocida",
+          quantity: p.quantity || "",
+          servingGrams: defaultServing,
+          stores: p.stores || "",
+          image: p.image_front_small_url || p.image_url || "",
+          nutriscore: (p.nutriscore_grade || "").toUpperCase(),
+          nova: p.nova_group || null,
+          ingredients: p.ingredients_text_es || p.ingredients_text || "",
+          allergens: allergensClean,
+          additives: additivesClean,
+          categoriesTags: Array.isArray(p.categories_tags) ? p.categories_tags : [],
+          ingredientsAnalysis: Array.isArray(p.ingredients_analysis_tags) ? p.ingredients_analysis_tags : [],
+          nutriments: parseNutriments(p.nutriments)
+        };
+
+        scanHistory = [productObj, ...scanHistory.filter((item) => item.code !== cleanCode)].slice(0, 60);
+        localStorage.setItem("bentonutri_history_v2", JSON.stringify(scanHistory));
+
+        renderProduct(productObj, false);
+      } catch (err) {
+        if (cached) renderProduct(cached, true);
+        else notify("Error de conexión al consultar Open Food Facts.");
+      }
+    }
+
+    // Comprobar Perfil de Alertas Personalizado
+    function checkPersonalAlerts(prod) {
+      const hits = [];
+      const textAll = `${prod.name} ${prod.ingredients} ${(prod.allergens || []).join(" ")}`.toLowerCase();
+      const analysis = (prod.ingredientsAnalysis || []).join(" ").toLowerCase();
+
+      if (blacklistedItems.some((b) => b.code === prod.code)) {
+        hits.push("ESTE PRODUCTO ESTÁ EN TU LISTA NEGRA DE DESCARTADOS");
+      }
+      if (userPrefs.noGluten && /(gluten|trigo|cebada|centeno|avena|espelta)/.test(textAll)) {
+        hits.push("CONTIENE GLUTEN O CEREALES CON GLUTEN");
+      }
+      if (userPrefs.noLactose && /(leche|lactosa|suero lácteo|nata|mantequilla|queso|caseína)/.test(textAll)) {
+        hits.push("CONTIENE LÁCTEOS O LACTOSA");
+      }
+      if (userPrefs.vegan && (analysis.includes("non-vegan") || /(leche|huevo|miel|carne|pollo|pescado|atún|gelatina|mantequilla)/.test(textAll))) {
+        hits.push("NO APTO PARA DIETA VEGANA");
+      }
+      if (userPrefs.noPalm && (analysis.includes("palm-oil") && !analysis.includes("palm-oil-free") || /palma/.test(textAll))) {
+        hits.push("CONTIENE ACEITE O GRASA DE PALMA");
+      }
+      if (userPrefs.lowSugar && prod.nutriments?.sugars !== null && prod.nutriments.sugars > 5) {
+        hits.push(`SUPERA TU LÍMITE PERSONAL DE AZÚCAR (${prod.nutriments.sugars.toFixed(1)} g / 100 g)`);
+      }
+      if (userPrefs.customWords) {
+        userPrefs.customWords.split(",").map((w) => w.trim().toLowerCase()).filter(Boolean).forEach((word) => {
+          if (textAll.includes(word)) hits.push(`CONTIENE TU PALABRA PROHIBIDA: "${word.toUpperCase()}"`);
+        });
+      }
+      return hits;
+    }
+
+    function evaluateHealth(prod) {
+      const alerts = [];
+      let score = 100;
+      const n = prod.nutriments;
+
+      if (userPrefs.highProtein && n.proteins !== null && n.proteins >= 15) {
+        alerts.push({ type: "ok", text: `★ ALTO EN PROTEÍNAS (Tu objetivo): ${n.proteins.toFixed(1)} g por 100 g.` });
+      }
+
+      if (prod.nova === 4) {
+        score -= 35;
+        alerts.push({ type: "bad", text: "Ultraprocesado (NOVA 4): Contiene formulaciones industriales o aditivos cosméticos." });
+      } else if (prod.nova === 3) {
+        score -= 12;
+        alerts.push({ type: "warn", text: "Alimento procesado (NOVA 3): Consumo moderado." });
+      } else if (prod.nova === 1 || prod.nova === 2) {
+        alerts.push({ type: "ok", text: `Procesamiento mínimo (NOVA ${prod.nova}): Buen ingrediente base.` });
+      }
+
+      if (n.sugars !== null) {
+        if (n.sugars >= 15) {
+          score -= 25;
+          alerts.push({ type: "bad", text: `Azúcares altos: ${n.sugars.toFixed(1)} g por 100 g.` });
+        } else if (n.sugars >= 5) {
+          score -= 10;
+          alerts.push({ type: "warn", text: `Azúcares moderados: ${n.sugars.toFixed(1)} g por 100 g.` });
+        } else {
+          alerts.push({ type: "ok", text: `Bajo en azúcares (${n.sugars.toFixed(1)} g / 100 g).` });
+        }
+      }
+
+      if (n.satFat !== null) {
+        if (n.satFat >= 5) {
+          score -= 20;
+          alerts.push({ type: "bad", text: `Grasas saturadas elevadas: ${n.satFat.toFixed(1)} g por 100 g.` });
+        } else {
+          alerts.push({ type: "ok", text: `Grasas saturadas controladas (${n.satFat.toFixed(1)} g / 100 g).` });
+        }
+      }
+
+      if (n.salt !== null) {
+        if (n.salt >= 1.2) {
+          score -= 18;
+          alerts.push({ type: "bad", text: `Exceso de sal: ${n.salt.toFixed(2)} g por 100 g.` });
+        } else {
+          alerts.push({ type: "ok", text: `Contenido de sal adecuado (${n.salt.toFixed(2)} g / 100 g).` });
+        }
+      }
+
+      if (prod.allergens && prod.allergens.length > 0) {
+        alerts.push({ type: "warn", text: `Alérgenos declarados: ${prod.allergens.join(", ")}` });
+      }
+
+      if (prod.nutriscore === "D" || prod.nutriscore === "E") score -= 15;
+      if (prod.nutriscore === "A" || prod.nutriscore === "B") score += 10;
+      score = Math.max(0, Math.min(100, score));
+
+      let level = "good";
+      let title = "BUENA OPCIÓN · SALUDABLE";
+      if (score < 45 || prod.nutriscore === "D" || prod.nutriscore === "E" || prod.nova === 4) {
+        level = "bad";
+        title = "EVITAR / ULTRAPROCESADO";
+      } else if (score < 72 || prod.nutriscore === "C") {
+        level = "mid";
+        title = "ACEPTABLE · CONSUMO OCASIONAL";
+      }
+
+      return { score, level, title, alerts };
+    }
+
+    function renderNutriTable(prod) {
+      const n = prod.nutriments;
+      const portion = Math.max(1, parseFloat(document.getElementById("portionGramsInput").value) || 100);
+      const factor = portion / 100;
+      document.getElementById("portionColHeader").textContent = `Por ración (${portion} g)`;
+
+      const fmtCell = (val, unit, dec = 1) => {
+        if (val === null || val === undefined || isNaN(val)) return { c100: "—", cPortion: "—" };
+        return {
+          c100: `${Number(val).toFixed(dec)} ${unit}`,
+          cPortion: `${(Number(val) * factor).toFixed(dec)} ${unit}`
+        };
+      };
+
+      const energy100 = n.kcal !== null ? `${n.kj} kJ / ${Math.round(n.kcal)} kcal` : "—";
+      const energyPor = n.kcal !== null ? `${Math.round(n.kj * factor)} kJ / ${Math.round(n.kcal * factor)} kcal` : "—";
+
+      const rows = [
+        { label: "Valor energético", c100: energy100, cPortion: energyPor, cls: "major-row" },
+        { label: "Grasas", ...fmtCell(n.fat, "g", 1), cls: "" },
+        { label: "de las cuales saturadas", ...fmtCell(n.satFat, "g", 1), cls: "sub-row" },
+        { label: "Hidratos de carbono", ...fmtCell(n.carbs, "g", 1), cls: "" },
+        { label: "de los cuales azúcares", ...fmtCell(n.sugars, "g", 1), cls: "sub-row" },
+        { label: "Fibra alimentaria", ...fmtCell(n.fiber, "g", 1), cls: "" },
+        { label: "Proteínas", ...fmtCell(n.proteins, "g", 1), cls: "major-row" },
+        { label: "Sal", ...fmtCell(n.salt, "g", 2), cls: "" }
+      ];
+
+      document.getElementById("nutriTableBody").innerHTML = rows
+        .map((r) => `<tr class="${r.cls}"><td>${r.label}</td><td>${r.c100}</td><td>${r.cPortion}</td></tr>`)
+        .join("");
+    }
+
+    function renderAdditivesExplained(additivesList) {
+      const sec = document.getElementById("additivesSection");
+      const grid = document.getElementById("additivesGrid");
+      if (!additivesList || !additivesList.length) {
+        sec.style.display = "none";
+        return;
+      }
+      sec.style.display = "flex";
+      grid.innerHTML = additivesList
+        .map((rawCode) => {
+          const clean = rawCode.replace(/[^A-Z0-9]/g, "");
+          const info = ADDITIVES_DB[clean];
+          if (info) {
+            const labelRisk = info.risk === "ok" ? "Inofensivo" : info.risk === "warn" ? "Moderado" : "Evitar en exceso";
+            return `<div class="add-chip ${info.risk}"><strong>${clean}</strong> · ${info.name}<br><span style="color:var(--muted);">Nivel: ${labelRisk}</span></div>`;
+          }
+          return `<div class="add-chip"><strong>${clean}</strong> · Aditivo alimentario</div>`;
+        })
+        .join("");
+    }
+
+    function highlightCriticalWords(text) {
+      let safe = escapeHtml(text);
+      CRITICAL_KEYWORDS.forEach((kw) => {
+        const rx = new RegExp(`(${kw})`, "gi");
+        safe = safe.replace(rx, '<span class="hl-crit">$1</span>');
+      });
+      return safe;
+    }
+
+    function renderProduct(prod, fromOfflineCache) {
+      currentProduct = prod;
+      document.getElementById("resultCard").style.display = "flex";
+      document.getElementById("compareBox").classList.remove("active");
+      document.getElementById("portionGramsInput").value = prod.servingGrams || 100;
+
+      // Alertas personales
+      const pHits = checkPersonalAlerts(prod);
+      const pBox = document.getElementById("personalAlertBox");
+      if (pHits.length) {
+        pBox.innerHTML = "⚠ ALERTA DE TU PERFIL:<br>• " + pHits.join("<br>• ");
+        pBox.classList.add("show");
+      } else {
+        pBox.classList.remove("show");
+      }
+
+      const evalRes = evaluateHealth(prod);
+      const banner = document.getElementById("verdictBanner");
+      banner.className = `verdict-banner verdict-${evalRes.level}`;
+      document.getElementById("verdictTitle").textContent = evalRes.title;
+      document.getElementById("verdictSubtitle").textContent =
+        `Puntuación Bento: ${evalRes.score}/100` + (fromOfflineCache ? " · (Caché offline)" : "");
+
+      const imgEl = document.getElementById("prodImg");
+      if (prod.image) {
+        imgEl.src = prod.image;
+        imgEl.style.display = "block";
+      } else {
+        imgEl.style.display = "none";
+      }
+
+      document.getElementById("prodName").textContent = prod.name + (prod.quantity ? ` (${prod.quantity})` : "");
+      document.getElementById("prodBrand").textContent =
+        `${prod.brand}` + (prod.stores ? ` · Tiendas: ${prod.stores}` : "");
+      document.getElementById("badgeNutriscore").textContent = `Nutri-Score: ${prod.nutriscore || "N/D"}`;
+      document.getElementById("badgeNova").textContent = `NOVA: ${prod.nova || "N/D"}`;
+      document.getElementById("badgeCode").textContent = `EAN: ${prod.code}`;
+
+      renderNutriTable(prod);
+
+      document.getElementById("alertList").innerHTML = evalRes.alerts
+        .map((a) => `<div class="alert-tag ${a.type}">${a.type === "bad" ? "⚠" : a.type === "warn" ? "!" : "✓"} ${escapeHtml(a.text)}</div>`)
+        .join("");
+
+      renderAdditivesExplained(prod.additives);
+
+      document.getElementById("ingredientsText").innerHTML = prod.ingredients
+        ? highlightCriticalWords(prod.ingredients)
+        : "Este producto aún no tiene los ingredientes transcritos en Open Food Facts.";
+
+      if (navigator.onLine && prod.categoriesTags.length) {
+        findSimilarProducts(prod);
+      } else {
+        document.getElementById("alternativesCard").style.display = "none";
+      }
+    }
+
+    // Guardar en Aprobados o Lista Negra
+    document.getElementById("btnSaveApproved").onclick = () => {
+      if (!currentProduct) return;
+      blacklistedItems = blacklistedItems.filter((x) => x.code !== currentProduct.code);
+      approvedItems = [currentProduct, ...approvedItems.filter((x) => x.code !== currentProduct.code)];
+      localStorage.setItem("bentonutri_approved_v1", JSON.stringify(approvedItems));
+      localStorage.setItem("bentonutri_blacklist_v1", JSON.stringify(blacklistedItems));
+      notify("Guardado en Aprobados / Lista de la Compra.");
+    };
+
+    document.getElementById("btnSaveBlacklisted").onclick = () => {
+      if (!currentProduct) return;
+      approvedItems = approvedItems.filter((x) => x.code !== currentProduct.code);
+      blacklistedItems = [currentProduct, ...blacklistedItems.filter((x) => x.code !== currentProduct.code)];
+      localStorage.setItem("bentonutri_approved_v1", JSON.stringify(approvedItems));
+      localStorage.setItem("bentonutri_blacklist_v1", JSON.stringify(blacklistedItems));
+      notify("Añadido a Lista Negra de descartados.");
+      renderProduct(currentProduct, false);
+    };
+
+    // Buscador de opciones parecidas + comparador
+    async function findSimilarProducts(prod) {
+      const altCard = document.getElementById("alternativesCard");
+      const altList = document.getElementById("altList");
+      const altSub = document.getElementById("altSubtitle");
+      const storeTag = superSelect.value;
+      const storeName = superSelect.options[superSelect.selectedIndex].text;
+      const filterMode = document.getElementById("altFilterMode").value;
+
+      altCard.style.display = "flex";
+      document.getElementById("altTitle").textContent = storeTag
+        ? `Opciones parecidas en ${storeName}`
+        : "Opciones parecidas en la misma categoría";
+      altSub.textContent = "Consultando productos similares...";
+      altList.innerHTML = "";
+
+      const catTag = prod.categoriesTags[prod.categoriesTags.length - 1] || prod.categoriesTags[0];
+
+      try {
+        let url = `https://world.openfoodfacts.org/api/v2/search?categories_tags=${encodeURIComponent(catTag)}&countries_tags=spain&page_size=8&fields=code,product_name,product_name_es,brands,nutriscore_grade,nova_group,image_front_small_url,nutriments`;
+        if (filterMode === "best") url += "&nutriscore_grade=a,b";
+        if (storeTag) url += `&stores_tags=${encodeURIComponent(storeTag)}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+        const products = (data.products || []).filter((item) => item.code !== prod.code);
+
+        if (!products.length) {
+          altSub.textContent = "No hay suficientes resultados con este filtro. Cambia a 'Todas las opciones parecidas' o 'Todos los supermercados'.";
+          return;
+        }
+
+        altSub.textContent = `Encontradas ${products.length} opciones similares para comparar:`;
+        products.slice(0, 5).forEach((alt) => {
+          const name = alt.product_name_es || alt.product_name || "Producto similar";
+          const ns = (alt.nutriscore_grade || "?").toUpperCase();
+          const altNutri = parseNutriments(alt.nutriments);
+
+          const div = document.createElement("div");
+          div.className = "alt-item" + (ns === "D" || ns === "E" ? " bad" : ns === "C" ? " mid" : "");
+          div.innerHTML = `
+            <div class="alt-left">
+              ${alt.image_front_small_url ? `<img class="alt-thumb" src="${alt.image_front_small_url}" alt="" />` : ""}
+              <div>
+                <div style="font-weight:800; font-size:0.84rem;">${escapeHtml(name)}</div>
+                <div class="desc-text">
+                  ${escapeHtml(alt.brands || "")} · Nutri-Score <strong>${ns}</strong>
+                  ${altNutri.kcal !== null ? ` · ${Math.round(altNutri.kcal)} kcal` : ""}
+                  ${altNutri.sugars !== null ? ` · Azúcar: ${altNutri.sugars.toFixed(1)}g` : ""}
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <button type="button" class="btn btn-accent" data-cmp="1" style="padding:6px 9px; font-size:0.62rem;">Comparar</button>
+              <button type="button" class="btn" data-open="1" style="padding:6px 9px; font-size:0.62rem;">Abrir</button>
+            </div>
+          `;
+          div.querySelector("[data-cmp]").onclick = () => showSideBySideCompare(prod, { name, nutriscore: ns, nutriments: altNutri });
+          div.querySelector("[data-open]").onclick = () => {
+            fetchProduct(alt.code);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          };
+          altList.appendChild(div);
+        });
+      } catch (e) {
+        altSub.textContent = "No se pudieron cargar las opciones similares.";
+      }
+    }
+
+    function showSideBySideCompare(baseProd, altProd) {
+      const box = document.getElementById("compareBox");
+      const table = document.getElementById("compareTable");
+      box.classList.add("active");
+
+      const a = baseProd.nutriments;
+      const b = altProd.nutriments;
+
+      function rowCmp(label, valA, valB, unit, lowerIsBetter = true, dec = 1) {
+        const strA = valA !== null ? `${Number(valA).toFixed(dec)} ${unit}` : "—";
+        const strB = valB !== null ? `${Number(valB).toFixed(dec)} ${unit}` : "—";
+        let clsA = "", clsB = "";
+        if (valA !== null && valB !== null && valA !== valB) {
+          const aWins = lowerIsBetter ? valA < valB : valA > valB;
+          clsA = aWins ? "cmp-win" : "cmp-lose";
+          clsB = !aWins ? "cmp-win" : "cmp-lose";
+        }
+        return `<tr><td>${label}</td><td class="${clsA}">${strA}</td><td class="${clsB}">${strB}</td></tr>`;
+      }
+
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>Nutriente (100g)</th>
+            <th>${escapeHtml(baseProd.name.slice(0, 18))}</th>
+            <th>${escapeHtml(altProd.name.slice(0, 18))}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Nutri-Score</td><td>${baseProd.nutriscore || "N/D"}</td><td><strong>${altProd.nutriscore || "N/D"}</strong></td></tr>
+          ${rowCmp("Calorías", a.kcal, b.kcal, "kcal", true, 0)}
+          ${rowCmp("Grasas", a.fat, b.fat, "g", true, 1)}
+          ${rowCmp("Saturadas", a.satFat, b.satFat, "g", true, 1)}
+          ${rowCmp("Azúcares", a.sugars, b.sugars, "g", true, 1)}
+          ${rowCmp("Fibra", a.fiber, b.fiber, "g", false, 1)}
+          ${rowCmp("Proteínas", a.proteins, b.proteins, "g", false, 1)}
+          ${rowCmp("Sal", a.salt, b.salt, "g", true, 2)}
+        </tbody>
+      `;
+      box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    document.getElementById("btnCloseCompare").onclick = () => document.getElementById("compareBox").classList.remove("active");
+
+    // =========================================================================
+    // 02 · ESCÁNER OCR DE ETIQUETA (TESSERACT.JS)
+    // =========================================================================
+    document.getElementById("ocrImageInput").onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const status = document.getElementById("ocrStatusText");
+      if (!window.Tesseract) {
+        status.textContent = "Motor OCR no cargado. Pega el texto manualmente.";
+        return;
+      }
+      status.textContent = "Leyendo ingredientes de la imagen (puede tardar unos segundos)...";
+      try {
+        const res = await Tesseract.recognize(file, "spa");
+        const cleanText = res.data.text.replace(/\s+/g, " ").trim();
+        document.getElementById("ocrTextArea").value = cleanText;
+        status.textContent = "Lectura OCR completada.";
+        analyzeOcrRawText(cleanText);
+      } catch (err) {
+        status.textContent = "No se pudo leer la imagen. Prueba con más luz o pega el texto.";
+      }
+      e.target.value = "";
+    };
+
+    document.getElementById("btnAnalyzeOcrText").onclick = () => {
+      const txt = document.getElementById("ocrTextArea").value.trim();
+      if (!txt) return notify("Escribe o escanea primero los ingredientes.");
+      analyzeOcrRawText(txt);
+    };
+
+    document.getElementById("btnClearOcr").onclick = () => {
+      document.getElementById("ocrTextArea").value = "";
+      document.getElementById("ocrResultBox").style.display = "none";
+    };
+
+    function analyzeOcrRawText(rawText) {
+      const box = document.getElementById("ocrResultBox");
+      box.style.display = "flex";
+      const lower = rawText.toLowerCase();
+
+      // Comprobar perfil personal
+      const pHits = checkPersonalAlerts({ name: "", ingredients: rawText, allergens: [], nutriments: {} });
+      const pBox = document.getElementById("ocrPersonalAlert");
+      if (pHits.length) {
+        pBox.innerHTML = "⚠ ALERTA DE TU PERFIL:<br>• " + pHits.join("<br>• ");
+        pBox.classList.add("show");
+      } else {
+        pBox.classList.remove("show");
+      }
+
+      // Buscar ingredientes críticos y códigos E-XXX
+      const foundAlerts = [];
+      CRITICAL_KEYWORDS.forEach((kw) => {
+        if (lower.includes(kw)) foundAlerts.push({ bad: true, text: `Ingrediente crítico detectado: ${kw.toUpperCase()}` });
+      });
+
+      const eMatches = rawText.match(/\bE-?\s?\d{3}[a-z]?\b/gi) || [];
+      [...new Set(eMatches.map((m) => m.toUpperCase().replace(/[\s-]/g, "")))].forEach((code) => {
+        const info = ADDITIVES_DB[code];
+        if (info) {
+          foundAlerts.push({ bad: info.risk === "bad", text: `${code}: ${info.name}` });
+        } else {
+          foundAlerts.push({ bad: false, text: `Aditivo detectado: ${code}` });
+        }
+      });
+
+      const listEl = document.getElementById("ocrAlertsList");
+      listEl.innerHTML = foundAlerts.length
+        ? foundAlerts.map((a) => `<div class="alert-tag ${a.bad ? "" : "ok"}">${a.bad ? "⚠" : "i"} ${escapeHtml(a.text)}</div>`).join("")
+        : `<div class="alert-tag ok">✓ No se detectaron aditivos críticos ni azúcares industriales ocultos.</div>`;
+
+      document.getElementById("ocrHighlightedText").innerHTML = highlightCriticalWords(rawText);
+    }
+
+    // =========================================================================
+    // 03 · RENDERIZADO DE LISTAS (APROBADOS, LISTA NEGRA, HISTORIAL)
+    // =========================================================================
+    function renderProductList(items, containerEl, emptyMsg, allowDeleteFromKey) {
+      containerEl.innerHTML = "";
+      if (!items.length) {
+        containerEl.innerHTML = `<div class="desc-text">${emptyMsg}</div>`;
+        return;
+      }
+      items.forEach((item) => {
+        const ev = evaluateHealth(item);
+        const div = document.createElement("div");
+        div.className = "alt-item" + (ev.level === "bad" ? " bad" : ev.level === "mid" ? " mid" : "");
+        div.innerHTML = `
+          <div class="alt-left">
+            ${item.image ? `<img class="alt-thumb" src="${item.image}" alt="" />` : ""}
+            <div>
+              <div style="font-weight:800; font-size:0.84rem;">${escapeHtml(item.name)}</div>
+              <div class="desc-text">${escapeHtml(item.brand)} · Nutri-Score ${item.nutriscore || "?"} · ${ev.score}/100</div>
+            </div>
+          </div>
+          <div class="row">
+            <button type="button" class="btn" data-open="1" style="padding:6px 10px; font-size:0.62rem;">Abrir</button>
+            ${allowDeleteFromKey ? `<button type="button" class="btn" data-rm="1" style="padding:6px 8px; font-size:0.62rem;">✕</button>` : ""}
+          </div>
+        `;
+        div.querySelector("[data-open]").onclick = () => {
+          document.querySelector('[data-tab="tab-scan"]').click();
+          renderProduct(item, true);
+        };
+        const rmBtn = div.querySelector("[data-rm]");
+        if (rmBtn) {
+          rmBtn.onclick = () => {
+            if (allowDeleteFromKey === "approved") {
+              approvedItems = approvedItems.filter((x) => x.code !== item.code);
+              localStorage.setItem("bentonutri_approved_v1", JSON.stringify(approvedItems));
+            } else if (allowDeleteFromKey === "blacklist") {
+              blacklistedItems = blacklistedItems.filter((x) => x.code !== item.code);
+              localStorage.setItem("bentonutri_blacklist_v1", JSON.stringify(blacklistedItems));
+            }
+            renderAllLists();
+          };
+        }
+        containerEl.appendChild(div);
+      });
+    }
+
+    function renderAllLists() {
+      renderProductList(approvedItems, document.getElementById("approvedList"), "Aún no has guardado productos aprobados.", "approved");
+      renderProductList(blacklistedItems, document.getElementById("blacklistedList"), "Tu lista negra está vacía.", "blacklist");
+      renderProductList(scanHistory, document.getElementById("historyList"), "Aún no has escaneado ningún producto.", null);
+    }
+
+    document.getElementById("btnClearHistory").onclick = () => {
+      scanHistory = [];
+      localStorage.removeItem("bentonutri_history_v2");
+      renderAllLists();
+    };
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, (m) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[m]));
+    }
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

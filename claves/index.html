@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f5f5f3" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <title>Bento Claves</title>
+  <style>
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --ink: #111111;
+      --muted: #5e5e5a;
+      --border: #dcdcd6;
+      --accent: #d9381e;
+      --accent-hover: #b82d16;
+      --ok: #1b7a3d;
+      --warn: #b45309;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 760px;
+      padding: 20px 14px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .brand h1 span { color: var(--accent); }
+
+    .brand p {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    /* Pestañas principales */
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid var(--ink);
+      background: var(--surface);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      padding: 11px;
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      color: var(--ink);
+    }
+
+    .tab-btn + .tab-btn { border-left: 1px solid var(--ink); }
+
+    .tab-btn.active {
+      background: var(--ink);
+      color: var(--surface);
+    }
+
+    .panel { display: none; flex-direction: column; gap: 14px; }
+    .panel.active { display: flex; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Caja resultado contraseña */
+    .pw-output-box {
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 14px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .pw-text {
+      font-family: var(--mono);
+      font-size: 1.05rem;
+      font-weight: 700;
+      word-break: break-all;
+      letter-spacing: 0.03em;
+    }
+
+    .strength-bar-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      text-transform: uppercase;
+    }
+
+    .strength-track {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      overflow: hidden;
+    }
+
+    .strength-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--ok);
+      transition: width 0.2s, background-color 0.2s;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .slider-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 9px 10px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .check-item input { accent-color: var(--accent); width: 15px; height: 15px; }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      padding: 9px 13px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:hover { background: var(--ink); color: var(--surface); }
+
+    .btn-accent {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-accent:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    /* Formularios del Vault */
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 10px 11px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--ink);
+      outline: none;
+    }
+
+    .input:focus {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+
+    .lock-box {
+      max-width: 440px;
+      margin: 12px auto;
+      width: 100%;
+      text-align: left;
+    }
+
+    .lock-title {
+      font-size: 1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .lock-sub {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .error-msg {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--accent);
+      font-weight: 700;
+      min-height: 16px;
+    }
+
+    /* Lista de claves guardadas */
+    .vault-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .vault-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .vault-item {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .vault-item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .vault-service {
+      font-weight: 800;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+    }
+
+    .vault-user {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .vault-secret-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 7px 10px;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+    }
+
+    .vault-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .mini-btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 4px 8px;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .mini-btn:hover { background: var(--ink); color: var(--surface); }
+    .mini-btn.del:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--ink);
+      color: var(--surface);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      padding: 8px 14px;
+      border: 1px solid var(--accent);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s;
+      z-index: 50;
+    }
+
+    .toast.show { opacity: 1; }
+
+    @media (max-width: 520px) {
+      .options-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1><span>BENTO</span> CLAVES</h1>
+        <p>Generador criptográfico + Vault local cifrado AES-256</p>
+      </div>
+      <span id="vaultBadge" style="font-family:var(--mono); font-size:0.66rem; font-weight:700; padding:5px 9px; border:1px solid var(--ink); background:var(--surface);">
+        VAULT BLOQUEADO
+      </span>
+    </header>
+
+    <nav class="tabs">
+      <button type="button" class="tab-btn active" data-tab="genPanel">01 · Generador</button>
+      <button type="button" class="tab-btn" data-tab="vaultPanel">02 · Vault Privado</button>
+    </nav>
+
+    <!-- PANEL 1: GENERADOR DE CONTRASEÑAS -->
+    <section class="panel active" id="genPanel">
+      <div class="card">
+        <div class="pw-output-box">
+          <span class="pw-text" id="pwOutput">Generando...</span>
+          <button type="button" class="btn btn-accent" id="copyGenBtn">Copiar</button>
+        </div>
+
+        <div class="strength-bar-wrap">
+          <span id="strengthLabel">Fortaleza: Alta</span>
+          <div class="strength-track"><div class="strength-fill" id="strengthFill"></div></div>
+          <span id="entropyBits">0 bits</span>
+        </div>
+
+        <div class="slider-row">
+          <span>Longitud: <strong id="lenVal" style="color:var(--accent);">16</strong></span>
+          <input type="range" id="lenSlider" min="8" max="48" value="16" />
+        </div>
+
+        <div class="options-grid">
+          <label class="check-item"><input type="checkbox" id="optUpper" checked /> Mayúsculas (A-Z)</label>
+          <label class="check-item"><input type="checkbox" id="optLower" checked /> Minúsculas (a-z)</label>
+          <label class="check-item"><input type="checkbox" id="optNum" checked /> Números (0-9)</label>
+          <label class="check-item"><input type="checkbox" id="optSym" checked /> Símbolos (!@#$%&*)</label>
+          <label class="check-item"><input type="checkbox" id="optNoAmb" /> Evitar ambiguos (0O1lI)</label>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn btn-accent" id="regenBtn">Nueva Clave</button>
+          <button type="button" class="btn" id="sendToVaultBtn">Guardar en Vault →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL 2: VAULT CIFRADO -->
+    <section class="panel" id="vaultPanel">
+      <!-- Pantalla de bloqueo / creación inicial -->
+      <div class="card lock-box" id="vaultLockScreen">
+        <div class="lock-title" id="lockTitle">Introduce una contraseña</div>
+        <p class="lock-sub" id="lockSub">
+          Crea tu contraseña maestra para proteger el Vault. Quedará configurada para las siguientes veces que entres.
+        </p>
+
+        <div class="field">
+          <label for="masterPassInput">Contraseña del Vault</label>
+          <input type="password" id="masterPassInput" class="input" placeholder="••••••••••••" autocomplete="current-password" />
+        </div>
+
+        <div class="field" id="confirmPassWrap">
+          <label for="masterPassConfirm">Repite la contraseña (solo la primera vez)</label>
+          <input type="password" id="masterPassConfirm" class="input" placeholder="••••••••••••" autocomplete="new-password" />
+        </div>
+
+        <div class="error-msg" id="lockError"></div>
+
+        <div class="btn-row">
+          <button type="button" class="btn btn-accent" id="unlockVaultBtn" style="flex:1;">Entrar al Vault</button>
+        </div>
+
+        <div id="resetVaultWrap" style="display:none; padding-top:8px; border-top:1px solid var(--border); justify-content:space-between; align-items:center;">
+          <span style="font-family:var(--mono); font-size:0.62rem; color:var(--muted);">¿Olvidaste la clave maestra?</span>
+          <button type="button" class="mini-btn del" id="wipeVaultBtn">Borrar y reiniciar Vault</button>
+        </div>
+      </div>
+
+      <!-- Interior desbloqueado del Vault -->
+      <div id="vaultUnlockedScreen" style="display:none; flex-direction:column; gap:14px;">
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <strong style="font-family:var(--mono); font-size:0.76rem; text-transform:uppercase;">Añadir credencial al Vault</strong>
+            <div class="btn-row">
+              <button type="button" class="mini-btn" id="exportVaultBtn">Exportar copia</button>
+              <label class="mini-btn" style="cursor:pointer;">
+                Importar copia
+                <input type="file" id="importVaultInput" accept=".json" hidden />
+              </label>
+              <button type="button" class="mini-btn del" id="lockNowBtn">Bloquear</button>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:8px;">
+            <div class="field">
+              <label for="entryService">Servicio / Web</label>
+              <input type="text" id="entryService" class="input" placeholder="Ej. GitHub, Correo..." />
+            </div>
+            <div class="field">
+              <label for="entryUser">Usuario / Email</label>
+              <input type="text" id="entryUser" class="input" placeholder="usuario@dominio.com" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="entryPass">Contraseña</label>
+            <div style="display:flex; gap:6px;">
+              <input type="text" id="entryPass" class="input" placeholder="Escribe o genera una clave" />
+              <button type="button" class="btn" id="quickGenEntryBtn" title="Generar aleatoria">↻</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="entryNote">Nota opcional</label>
+            <input type="text" id="entryNote" class="input" placeholder="PIN, código de recuperación, etc." />
+          </div>
+
+          <button type="button" class="btn btn-accent" id="addEntryBtn">Guardar en Vault</button>
+        </div>
+
+        <div class="vault-toolbar">
+          <input type="search" id="searchVaultInput" class="input" style="max-width:300px;" placeholder="Buscar servicio o usuario..." />
+          <span style="font-family:var(--mono); font-size:0.68rem; color:var(--muted);">
+            Guardadas: <strong id="vaultCount">0</strong>
+          </span>
+        </div>
+
+        <div class="vault-list" id="vaultList"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast">Copiado al portapapeles</div>
+
+  <script>
+    const STORAGE_KEY = "bentok_vault_v1";
+    let currentGenerated = "";
+    let masterCryptoKey = null;
+    let vaultSaltBase64 = null;
+    let vaultEntries = []; // [{ id, service, user, pass, note, updatedAt }]
+
+    // Utilidades de notificación
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove("show"), 2000);
+    }
+
+    async function copySecure(text, label = "Copiado") {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast(label);
+      } catch (e) {
+        showToast("No se pudo copiar");
+      }
+    }
+
+    // Navegación entre pestañas
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+        if (btn.dataset.tab === "vaultPanel") refreshVaultLockUI();
+      });
+    });
+
+    // ================= GENERADOR DE CONTRASEÑAS =================
+    const lenSlider = document.getElementById("lenSlider");
+    const lenVal = document.getElementById("lenVal");
+
+    function generatePassword(customLen) {
+      const length = customLen || parseInt(lenSlider.value, 10);
+      const noAmb = document.getElementById("optNoAmb").checked;
+
+      let upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      let lower = "abcdefghijklmnopqrstuvwxyz";
+      let nums = "0123456789";
+      let syms = "!@#$%&*_-+=?";
+
+      if (noAmb) {
+        upper = upper.replace(/[OI]/g, "");
+        lower = lower.replace(/[l]/g, "");
+        nums = nums.replace(/[01]/g, "");
+      }
+
+      const pools = [];
+      if (document.getElementById("optUpper").checked) pools.push(upper);
+      if (document.getElementById("optLower").checked) pools.push(lower);
+      if (document.getElementById("optNum").checked) pools.push(nums);
+      if (document.getElementById("optSym").checked) pools.push(syms);
+
+      if (pools.length === 0) {
+        document.getElementById("optLower").checked = true;
+        pools.push(lower);
+      }
+
+      const allChars = pools.join("");
+      const randomVals = new Uint32Array(length);
+      crypto.getRandomValues(randomVals);
+
+      // Garantizar al menos 1 carácter de cada grupo seleccionado
+      const chars = [];
+      pools.forEach((pool, i) => {
+        if (i < length) chars.push(pool[randomVals[i] % pool.length]);
+      });
+      for (let i = chars.length; i < length; i++) {
+        chars.push(allChars[randomVals[i] % allChars.length]);
+      }
+
+      // Mezcla Fisher-Yates criptográfica
+      const shuffleVals = new Uint32Array(chars.length);
+      crypto.getRandomValues(shuffleVals);
+      for (let i = chars.length - 1; i > 0; i--) {
+        const j = shuffleVals[i] % (i + 1);
+        [chars[i], chars[j]] = [chars[j], chars[i]];
+      }
+
+      const result = chars.join("");
+      if (!customLen) {
+        currentGenerated = result;
+        document.getElementById("pwOutput").textContent = result;
+        updateStrengthMeter(result, allChars.length);
+      }
+      return result;
+    }
+
+    function updateStrengthMeter(pw, poolSize) {
+      const bits = Math.round(pw.length * Math.log2(Math.max(2, poolSize)));
+      document.getElementById("entropyBits").textContent = bits + " bits";
+      const fill = document.getElementById("strengthFill");
+      const label = document.getElementById("strengthLabel");
+
+      if (bits < 50) {
+        fill.style.width = "30%";
+        fill.style.background = "var(--accent)";
+        label.textContent = "Fortaleza: Débil";
+      } else if (bits < 75) {
+        fill.style.width = "65%";
+        fill.style.background = "var(--warn)";
+        label.textContent = "Fortaleza: Media";
+      } else {
+        fill.style.width = "100%";
+        fill.style.background = "var(--ok)";
+        label.textContent = "Fortaleza: Muy alta";
+      }
+    }
+
+    lenSlider.oninput = () => {
+      lenVal.textContent = lenSlider.value;
+      generatePassword();
+    };
+    ["optUpper", "optLower", "optNum", "optSym", "optNoAmb"].forEach(id => {
+      document.getElementById(id).onchange = () => generatePassword();
+    });
+    document.getElementById("regenBtn").onclick = () => generatePassword();
+    document.getElementById("copyGenBtn").onclick = () => copySecure(currentGenerated, "Contraseña copiada");
+
+    document.getElementById("sendToVaultBtn").onclick = () => {
+      document.querySelector('[data-tab="vaultPanel"]').click();
+      document.getElementById("entryPass").value = currentGenerated;
+      showToast("Clave lista para guardar en Vault");
+    };
+
+    // ================= CRIPTOGRAFÍA DEL VAULT (Web Crypto API) =================
+    function bufToBase64(buf) {
+      const bytes = new Uint8Array(buf);
+      let bin = "";
+      for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin);
+    }
+
+    function base64ToBuf(b64) {
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    }
+
+    async function deriveMasterKey(password, saltBytes) {
+      const enc = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        enc.encode(password),
+        "PBKDF2",
+        false,
+        ["deriveKey"]
+      );
+      return crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt: saltBytes,
+          iterations: 150000,
+          hash: "SHA-256"
+        },
+        keyMaterial,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+      );
+    }
+
+    async function saveEncryptedVault() {
+      if (!masterCryptoKey || !vaultSaltBase64) return;
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const enc = new TextEncoder();
+      const plainBytes = enc.encode(JSON.stringify(vaultEntries));
+      const cipherBuf = await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv },
+        masterCryptoKey,
+        plainBytes
+      );
+
+      const payload = {
+        v: 1,
+        salt: vaultSaltBase64,
+        iv: bufToBase64(iv),
+        data: bufToBase64(cipherBuf)
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    }
+
+    async function unlockOrCreateVault() {
+      const passInput = document.getElementById("masterPassInput");
+      const confirmInput = document.getElementById("masterPassConfirm");
+      const errBox = document.getElementById("lockError");
+      errBox.textContent = "";
+
+      const pass = passInput.value;
+      if (!pass || pass.length < 4) {
+        errBox.textContent = "Introduce una contraseña de al menos 4 caracteres.";
+        return;
+      }
+
+      const rawStored = localStorage.getItem(STORAGE_KEY);
+
+      if (!rawStored) {
+        // Primera vez: configurar contraseña maestra y crear vault vacío cifrado
+        if (pass !== confirmInput.value) {
+          errBox.textContent = "Las dos contraseñas no coinciden.";
+          return;
+        }
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        vaultSaltBase64 = bufToBase64(salt);
+        masterCryptoKey = await deriveMasterKey(pass, salt);
+        vaultEntries = [];
+        await saveEncryptedVault();
+        passInput.value = "";
+        confirmInput.value = "";
+        openUnlockedView();
+        showToast("Contraseña guardada y Vault creado");
+      } else {
+        // Siguientes veces: descifrar con la contraseña introducida
+        try {
+          const parsed = JSON.parse(rawStored);
+          const salt = base64ToBuf(parsed.salt);
+          const iv = base64ToBuf(parsed.iv);
+          const cipher = base64ToBuf(parsed.data);
+
+          const candidateKey = await deriveMasterKey(pass, salt);
+          const decryptedBuf = await crypto.subtle.decrypt(
+            { name: "AES-GCM", iv },
+            candidateKey,
+            cipher
+          );
+
+          const dec = new TextDecoder();
+          vaultEntries = JSON.parse(dec.decode(decryptedBuf));
+          vaultSaltBase64 = parsed.salt;
+          masterCryptoKey = candidateKey;
+          passInput.value = "";
+          openUnlockedView();
+        } catch (e) {
+          errBox.textContent = "Contraseña incorrecta. No se pudo abrir el Vault.";
+        }
+      }
+    }
+
+    function refreshVaultLockUI() {
+      if (masterCryptoKey) {
+        openUnlockedView();
+        return;
+      }
+      const exists = Boolean(localStorage.getItem(STORAGE_KEY));
+      document.getElementById("vaultLockScreen").style.display = "flex";
+      document.getElementById("vaultUnlockedScreen").style.display = "none";
+      document.getElementById("lockError").textContent = "";
+
+      const badge = document.getElementById("vaultBadge");
+      badge.textContent = "VAULT BLOQUEADO";
+      badge.style.borderColor = "var(--ink)";
+      badge.style.color = "var(--ink)";
+
+      if (!exists) {
+        document.getElementById("lockTitle").textContent = "Introduce una contraseña";
+        document.getElementById("lockSub").textContent =
+          "Primera vez en el Vault: elige una contraseña maestra. Quedará guardada para las siguientes veces que entres.";
+        document.getElementById("confirmPassWrap").style.display = "flex";
+        document.getElementById("resetVaultWrap").style.display = "none";
+        document.getElementById("unlockVaultBtn").textContent = "Guardar contraseña y entrar";
+      } else {
+        document.getElementById("lockTitle").textContent = "Introduce una contraseña";
+        document.getElementById("lockSub").textContent =
+          "Escribe tu contraseña maestra para descifrar tus claves guardadas.";
+        document.getElementById("confirmPassWrap").style.display = "none";
+        document.getElementById("resetVaultWrap").style.display = "flex";
+        document.getElementById("unlockVaultBtn").textContent = "Desbloquear Vault";
+      }
+    }
+
+    function openUnlockedView() {
+      document.getElementById("vaultLockScreen").style.display = "none";
+      document.getElementById("vaultUnlockedScreen").style.display = "flex";
+      const badge = document.getElementById("vaultBadge");
+      badge.textContent = "VAULT ABIERTO";
+      badge.style.borderColor = "var(--ok)";
+      badge.style.color = "var(--ok)";
+      renderVaultList();
+    }
+
+    document.getElementById("unlockVaultBtn").onclick = unlockOrCreateVault;
+    document.getElementById("masterPassInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") unlockOrCreateVault();
+    });
+    document.getElementById("masterPassConfirm").addEventListener("keydown", e => {
+      if (e.key === "Enter") unlockOrCreateVault();
+    });
+
+    document.getElementById("lockNowBtn").onclick = () => {
+      masterCryptoKey = null;
+      vaultEntries = [];
+      refreshVaultLockUI();
+      showToast("Vault bloqueado");
+    };
+
+    document.getElementById("wipeVaultBtn").onclick = () => {
+      if (confirm("Esto borrará permanentemente las contraseñas guardadas para crear una nueva contraseña maestra. ¿Continuar?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        masterCryptoKey = null;
+        vaultEntries = [];
+        refreshVaultLockUI();
+      }
+    };
+
+    // Gestión de entradas dentro del Vault
+    document.getElementById("quickGenEntryBtn").onclick = () => {
+      document.getElementById("entryPass").value = generatePassword(18);
+    };
+
+    document.getElementById("addEntryBtn").onclick = async () => {
+      const service = document.getElementById("entryService").value.trim();
+      const user = document.getElementById("entryUser").value.trim();
+      const pass = document.getElementById("entryPass").value.trim();
+      const note = document.getElementById("entryNote").value.trim();
+
+      if (!service || !pass) {
+        showToast("Escribe al menos el servicio y la contraseña");
+        return;
+      }
+
+      vaultEntries.unshift({
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        service,
+        user,
+        pass,
+        note,
+        updatedAt: new Date().toLocaleDateString("es-ES")
+      });
+
+      await saveEncryptedVault();
+      document.getElementById("entryService").value = "";
+      document.getElementById("entryUser").value = "";
+      document.getElementById("entryPass").value = "";
+      document.getElementById("entryNote").value = "";
+      renderVaultList();
+      showToast("Guardado y cifrado");
+    };
+
+    document.getElementById("searchVaultInput").oninput = renderVaultList;
+
+    function renderVaultList() {
+      const list = document.getElementById("vaultList");
+      const query = document.getElementById("searchVaultInput").value.trim().toLowerCase();
+      const filtered = vaultEntries.filter(e =>
+        e.service.toLowerCase().includes(query) ||
+        (e.user && e.user.toLowerCase().includes(query)) ||
+        (e.note && e.note.toLowerCase().includes(query))
+      );
+
+      document.getElementById("vaultCount").textContent = vaultEntries.length;
+      list.innerHTML = "";
+
+      if (filtered.length === 0) {
+        list.innerHTML = `<div style="font-family:var(--mono); font-size:0.72rem; color:var(--muted); padding:16px; border:1px dashed var(--border); text-align:center;">No hay contraseñas en esta vista.</div>`;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "vault-item";
+        let revealed = false;
+
+        card.innerHTML = `
+          <div class="vault-item-top">
+            <div>
+              <div class="vault-service">${escapeHtml(item.service)}</div>
+              <div class="vault-user">${escapeHtml(item.user || "Sin usuario")} · ${item.updatedAt || ""}</div>
+            </div>
+            <div class="vault-actions">
+              ${item.user ? `<button type="button" class="mini-btn" data-act="copyUser">Usuario</button>` : ""}
+              <button type="button" class="mini-btn" data-act="toggle">Ver</button>
+              <button type="button" class="mini-btn" data-act="copyPass" style="border-color:var(--accent); color:var(--accent);">Copiar clave</button>
+              <button type="button" class="mini-btn del" data-act="del">✕</button>
+            </div>
+          </div>
+          <div class="vault-secret-row">
+            <span data-role="secret">••••••••••••</span>
+            ${item.note ? `<span style="color:var(--muted); font-size:0.65rem;">${escapeHtml(item.note)}</span>` : ""}
+          </div>
+        `;
+
+        const secretSpan = card.querySelector('[data-role="secret"]');
+        const toggleBtn = card.querySelector('[data-act="toggle"]');
+
+        toggleBtn.onclick = () => {
+          revealed = !revealed;
+          secretSpan.textContent = revealed ? item.pass : "••••••••••••";
+          toggleBtn.textContent = revealed ? "Ocultar" : "Ver";
+        };
+
+        if (item.user) {
+          card.querySelector('[data-act="copyUser"]').onclick = () => copySecure(item.user, "Usuario copiado");
+        }
+        card.querySelector('[data-act="copyPass"]').onclick = () => copySecure(item.pass, "Contraseña copiada");
+        card.querySelector('[data-act="del"]').onclick = async () => {
+          if (confirm(`¿Eliminar "${item.service}" del Vault?`)) {
+            vaultEntries = vaultEntries.filter(x => x.id !== item.id);
+            await saveEncryptedVault();
+            renderVaultList();
+          }
+        };
+
+        list.appendChild(card);
+      });
+    }
+
+    // Exportar / Importar copia cifrada
+    document.getElementById("exportVaultBtn").onclick = () => {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const blob = new Blob([raw], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "Bento-Claves-Vault.json";
+      a.click();
+    };
+
+    document.getElementById("importVaultInput").onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const obj = JSON.parse(reader.result);
+          if (!obj.salt || !obj.iv || !obj.data) throw new Error();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+          masterCryptoKey = null;
+          vaultEntries = [];
+          refreshVaultLockUI();
+          showToast("Copia importada. Introduce su contraseña maestra.");
+        } catch (err) {
+          showToast("Archivo de copia no válido");
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[m]));
+    }
+
+    // Inicializar
+    generatePassword();
+    refreshVaultLockUI();
+    if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+  </script>
+</body>
+</html>

@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f5f5f3" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <title>BENTO PDF · Herramientas PDF Locales</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@2.5.0/dist/pdf-lib.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+
+  <style>
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --ink: #111111;
+      --muted: #5e5e5a;
+      --border: #dcdcd6;
+      --accent: #d9381e;
+      --accent-hover: #b82d16;
+      --ok: #1b7a3d;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      padding: 20px 14px 56px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .brand h1 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .brand h1 span { color: var(--accent); }
+
+    .brand p {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .badge-local {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 700;
+      padding: 5px 9px;
+      border: 1px solid var(--ok);
+      color: var(--ok);
+      background: var(--surface);
+      text-transform: uppercase;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .tab-btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      padding: 10px 8px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .tab-btn.active {
+      background: var(--ink);
+      color: var(--surface);
+      border-bottom: 3px solid var(--accent);
+    }
+
+    .panel { display: none; flex-direction: column; gap: 14px; }
+    .panel.active { display: flex; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .card.full { grid-column: 1 / -1; }
+
+    .card-tag {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .card p {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    label {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+
+    input[type="text"], input[type="password"], input[type="number"], select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 8px 10px;
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      color: var(--ink);
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+
+    input[type="file"] {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      background: var(--bg);
+      border: 1px dashed var(--ink);
+      padding: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      padding: 9px 12px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:hover:not(:disabled) { background: var(--ink); color: var(--surface); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-accent {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-accent:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+
+    .sig-box {
+      border: 1px solid var(--ink);
+      background: #ffffff;
+      position: relative;
+      touch-action: none;
+    }
+
+    #sigCanvas {
+      width: 100%;
+      height: 120px;
+      display: block;
+      cursor: crosshair;
+    }
+
+    .preview-stage {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--ink);
+      background: #eaeae4;
+      padding: 10px;
+      max-height: 460px;
+      overflow: auto;
+    }
+
+    .preview-stage.active { display: flex; }
+
+    .preview-hint {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      color: var(--ink);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .preview-canvas {
+      background: #ffffff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+      cursor: crosshair;
+      max-width: 100%;
+      height: auto;
+      touch-action: none;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--ink);
+      color: var(--surface);
+      border-left: 4px solid var(--accent);
+      padding: 10px 16px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      z-index: 50;
+      display: none;
+      max-width: 92vw;
+    }
+
+    .toast.show { display: block; }
+
+    #docxPrintContainer { display: none; }
+
+    @media print {
+      body * { visibility: hidden !important; }
+      #docxPrintContainer, #docxPrintContainer * { visibility: visible !important; }
+      #docxPrintContainer {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #ffffff !important;
+      }
+      .docx-wrapper { background: #ffffff !important; padding: 0 !important; }
+      .docx-wrapper > section.docx { box-shadow: none !important; margin: 0 !important; }
+    }
+
+    @media (max-width: 640px) {
+      .tabs { grid-template-columns: repeat(2, 1fr); }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1><span>BENTO</span> PDF</h1>
+        <p>Suite PDF completa · Procesamiento 100 % en tu navegador</p>
+      </div>
+      <div class="badge-local">● Local / Sin nube</div>
+    </header>
+
+    <nav class="tabs">
+      <button type="button" class="tab-btn active" data-tab="tab-estructura">01 · Estructura</button>
+      <button type="button" class="tab-btn" data-tab="tab-office">02 · Word ↔ PDF</button>
+      <button type="button" class="tab-btn" data-tab="tab-edicion">03 · Edición y Firma</button>
+      <button type="button" class="tab-btn" data-tab="tab-seguridad">04 · Seguridad / Comp.</button>
+    </nav>
+
+    <!-- ===================================================================== -->
+    <!-- 01 · ESTRUCTURA                                                       -->
+    <!-- ===================================================================== -->
+    <section class="panel active" id="tab-estructura">
+      <div class="grid-2">
+        <div class="card">
+          <span class="card-tag">01.1 · Combinar</span>
+          <h2>Unir varios PDF</h2>
+          <p>Selecciona dos o más archivos PDF para fusionarlos en uno solo manteniendo el orden de selección.</p>
+          <div class="field-group">
+            <label>Archivos PDF (mínimo 2)</label>
+            <input type="file" id="mergeFiles" accept="application/pdf" multiple />
+          </div>
+          <button type="button" class="btn btn-accent" id="btnMerge">Unir y Descargar PDF</button>
+        </div>
+
+        <div class="card">
+          <span class="card-tag">01.2 · Extraer / Borrar</span>
+          <h2>Extraer páginas</h2>
+          <p>Indica las páginas que quieres conservar (ej: <code>1,3,5-8</code>) para crear un nuevo PDF limpio.</p>
+          <div class="field-group">
+            <label>Archivo PDF</label>
+            <input type="file" id="splitFile" accept="application/pdf" />
+          </div>
+          <div class="field-group">
+            <label>Páginas a extraer (ej. 1-3, 5)</label>
+            <input type="text" id="splitRange" placeholder="1-2, 4" />
+          </div>
+          <button type="button" class="btn btn-accent" id="btnSplit">Extraer Páginas</button>
+        </div>
+
+        <div class="card">
+          <span class="card-tag">01.3 · Orientación</span>
+          <h2>Rotar páginas PDF</h2>
+          <p>Gira todas las páginas o un rango específico en sentido horario.</p>
+          <div class="field-group">
+            <label>Archivo PDF</label>
+            <input type="file" id="rotateFile" accept="application/pdf" />
+          </div>
+          <div class="row">
+            <div class="field-group" style="flex:1;">
+              <label>Ángulo</label>
+              <select id="rotateDeg">
+                <option value="90">90° Derecha</option>
+                <option value="180">180° Invertir</option>
+                <option value="270">270° Izquierda</option>
+              </select>
+            </div>
+            <div class="field-group" style="flex:1;">
+              <label>Páginas (vacío = todas)</label>
+              <input type="text" id="rotateRange" placeholder="Todas" />
+            </div>
+          </div>
+          <button type="button" class="btn btn-accent" id="btnRotate">Rotar y Guardar</button>
+        </div>
+
+        <div class="card">
+          <span class="card-tag">01.4 · Imágenes → PDF</span>
+          <h2>JPG / PNG a PDF</h2>
+          <p>Convierte una o varias fotos en un documento PDF ajustado automáticamente a página.</p>
+          <div class="field-group">
+            <label>Imágenes (JPG, PNG, WebP)</label>
+            <input type="file" id="imgToPdfFiles" accept="image/*" multiple />
+          </div>
+          <button type="button" class="btn btn-accent" id="btnImgToPdf">Crear PDF de Imágenes</button>
+        </div>
+
+        <div class="card full">
+          <span class="card-tag">01.5 · PDF → Imágenes (.ZIP)</span>
+          <h2>Exportar PDF a JPG / PNG en ZIP</h2>
+          <p>Convierte todas las páginas de un PDF en imágenes sueltas empaquetadas en un único archivo <code>.zip</code>.</p>
+          <div class="row">
+            <div class="field-group" style="flex:2; min-width:190px;">
+              <label>Archivo PDF</label>
+              <input type="file" id="pdfToImgFile" accept="application/pdf" />
+            </div>
+            <div class="field-group" style="flex:1; min-width:130px;">
+              <label>Formato</label>
+              <select id="pdfToImgFmt">
+                <option value="jpeg">JPG (Ligero)</option>
+                <option value="png">PNG (Máx. nitidez)</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-accent" id="btnPdfToImg">Exportar ZIP</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 02 · WORD <-> PDF                                                     -->
+    <!-- ===================================================================== -->
+    <section class="panel" id="tab-office">
+      <div class="grid-2">
+        <div class="card">
+          <span class="card-tag">02.1 · .DOCX → .PDF VECTORIAL</span>
+          <h2>Word a PDF</h2>
+          <p>Maqueta tu <code>.docx</code> conservando tablas, márgenes, fuentes e imágenes y expórtalo como PDF vectorial nítido (elige <strong>Guardar como PDF</strong> en el diálogo).</p>
+          <div class="field-group">
+            <label>Documento Word (.docx)</label>
+            <input type="file" id="wordToPdfFile" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+          </div>
+          <div class="field-group">
+            <label>Ajuste de página</label>
+            <select id="wordPdfMode">
+              <option value="exact">Fidelidad original (Márgenes y tamaño Word)</option>
+              <option value="fit">Ajustar ancho a pantalla / página</option>
+            </select>
+          </div>
+          <button type="button" class="btn btn-accent" id="btnWordToPdf">Exportar Word a PDF</button>
+        </div>
+
+        <div class="card">
+          <span class="card-tag">02.2 · .PDF → .DOCX ESTRUCTURADO</span>
+          <h2>PDF a Word Editable</h2>
+          <p>Analiza la jerarquía visual del PDF para reconstruir párrafos completos, títulos, negritas, cursivas y columnas en un archivo <code>.docx</code> limpio.</p>
+          <div class="field-group">
+            <label>Archivo PDF</label>
+            <input type="file" id="pdfToWordFile" accept="application/pdf" />
+          </div>
+          <div class="field-group">
+            <label>Separación entre páginas</label>
+            <select id="pdfWordBreak">
+              <option value="break">Salto de página real</option>
+              <option value="space">Texto continuo con espacio</option>
+            </select>
+          </div>
+          <button type="button" class="btn btn-accent" id="btnPdfToWord">Convertir PDF a Word</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 03 · EDICIÓN (NUMERACIÓN, MARCA DE AGUA APLANADA, RECORTE, FIRMA)     -->
+    <!-- ===================================================================== -->
+    <section class="panel" id="tab-edicion">
+      <div class="grid-2">
+        <div class="card">
+          <span class="card-tag">03.1 · Paginación</span>
+          <h2>Numerar páginas</h2>
+          <p>Inserta numeración automática limpia en el pie de todas las páginas del PDF.</p>
+          <div class="field-group">
+            <label>Archivo PDF</label>
+            <input type="file" id="numFile" accept="application/pdf" />
+          </div>
+          <div class="row">
+            <div class="field-group" style="flex:1;">
+              <label>Formato</label>
+              <select id="numFormat">
+                <option value="simple">1, 2, 3...</option>
+                <option value="total">1 / 10</option>
+                <option value="pag">Página 1 de 10</option>
+              </select>
+            </div>
+            <div class="field-group" style="flex:1;">
+              <label>Posición</label>
+              <select id="numPos">
+                <option value="right">Inferior derecha</option>
+                <option value="center">Inferior centro</option>
+                <option value="left">Inferior izquierda</option>
+              </select>
+            </div>
+          </div>
+          <button type="button" class="btn btn-accent" id="btnNum">Añadir Números</button>
+        </div>
+
+        <!-- Marca de agua APLANADA (imposible de quitar en Word) -->
+        <div class="card">
+          <span class="card-tag">03.2 · Protección Anti-Edición</span>
+          <h2>Marca de agua permanente</h2>
+          <p>Funde el texto en los píxeles del documento para que <strong>no se pueda seleccionar ni borrar en Word</strong> (ideal para DNI o contratos).</p>
+          <div class="field-group">
+            <label>Archivo PDF</label>
+            <input type="file" id="wmFile" accept="application/pdf" />
+          </div>
+          <div class="field-group">
+            <label>Texto de protección</label>
+            <input type="text" id="wmText" value="SOLO PARA TRÁMITE · COPIA NO VÁLIDA" />
+          </div>
+          <div class="row">
+            <div class="field-group" style="flex:1;">
+              <label>Diseño</label>
+              <select id="wmStyle">
+                <option value="tiled">Malla repetida (Anti-recorte)</option>
+                <option value="single">Texto diagonal grande</option>
+              </select>
+            </div>
+            <div class="field-group" style="flex:1;">
+              <label>Opacidad</label>
+              <select id="wmOpacity">
+                <option value="0.22">Suave (22%)</option>
+                <option value="0.35" selected>Media (35%)</option>
+                <option value="0.52">Fuerte (52%)</option>
+              </select>
+            </div>
+          </div>
+          <button type="button" class="btn btn-accent" id="btnWm">Estampar y Aplanar PDF</button>
+        </div>
+
+        <div class="card full">
+          <span class="card-tag">03.3 · Encuadre</span>
+          <h2>Recortar márgenes (Crop)</h2>
+          <p>Recorta bordes blancos sobrantes de todas las páginas indicando los puntos a quitar por cada lado.</p>
+          <div class="row">
+            <div class="field-group" style="flex:2; min-width:190px;">
+              <label>Archivo PDF</label>
+              <input type="file" id="cropFile" accept="application/pdf" />
+            </div>
+            <div class="field-group" style="flex:1; min-width:120px;">
+              <label>Arriba / Abajo (pt)</label>
+              <input type="number" id="cropY" value="30" min="0" max="300" />
+            </div>
+            <div class="field-group" style="flex:1; min-width:120px;">
+              <label>Izq. / Der. (pt)</label>
+              <input type="number" id="cropX" value="25" min="0" max="300" />
+            </div>
+            <button type="button" class="btn btn-accent" id="btnCrop">Recortar PDF</button>
+          </div>
+        </div>
+
+        <div class="card full">
+          <span class="card-tag">03.4 · Rúbrica Táctil Visual</span>
+          <h2>Firmar PDF (Posición exacta en vista previa)</h2>
+          <p>1) Sube tu PDF y dibuja tu firma. 2) Toca o arrastra sobre la vista previa para colocar la firma justo donde quieras.</p>
+          <div class="row">
+            <div class="field-group" style="flex:2; min-width:180px;">
+              <label>Archivo PDF</label>
+              <input type="file" id="signFile" accept="application/pdf" />
+            </div>
+            <div class="field-group" style="width:95px;">
+              <label>Ver página</label>
+              <input type="number" id="signPageNum" value="1" min="1" />
+            </div>
+            <div class="field-group" style="flex:1; min-width:130px;">
+              <label>Tamaño firma</label>
+              <select id="signScale">
+                <option value="105">Pequeña</option>
+                <option value="145" selected>Mediana</option>
+                <option value="195">Grande</option>
+              </select>
+            </div>
+            <div class="field-group" style="flex:1; min-width:160px;">
+              <label>Aplicar en</label>
+              <select id="signPages">
+                <option value="selected">Solo página visible</option>
+                <option value="last">Solo última página</option>
+                <option value="all">Todas las páginas</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="sig-box">
+            <canvas id="sigCanvas"></canvas>
+          </div>
+
+          <div class="row">
+            <button type="button" class="btn" id="btnClearSig">Borrar firma</button>
+            <button type="button" class="btn btn-accent" id="btnSign">Estampar y Descargar PDF</button>
+          </div>
+
+          <div class="preview-stage" id="signPreviewStage">
+            <div class="preview-hint" id="signPreviewInfo">Toca o arrastra sobre la página para mover tu firma</div>
+            <canvas id="signPreviewCanvas" class="preview-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 04 · SEGURIDAD (COMPRESIÓN, CIFRADO, DESBLOQUEO, CENSURA APLANADA)    -->
+    <!-- ===================================================================== -->
+    <section class="panel" id="tab-seguridad">
+      <div class="grid-2">
+        <div class="card">
+          <span class="card-tag">04.1 · Optimización</span>
+          <h2>Comprimir PDF</h2>
+          <p>Reduce el peso del archivo re-codificando páginas y eliminando metadatos ocultos para enviarlo por email o web.</p>
+          <div class="field-group">
+            <label>Archivo PDF pesado</label>
+            <input type="file" id="compFile" accept="application/pdf" />
+          </div>
+          <div class="field-group">
+            <label>Nivel de compresión</label>
+            <select id="compQuality">
+              <option value="0.72">Equilibrado (Buena lectura · 72%)</option>
+              <option value="0.50">Fuerte (Mínimo peso · 50%)</option>
+              <option value="0.88">Ligero (Alta nitidez · 88%)</option>
+            </select>
+          </div>
+          <button type="button" class="btn btn-accent" id="btnCompress">Comprimir y Descargar</button>
+        </div>
+
+        <div class="card">
+          <span class="card-tag">04.2 · Cifrado</span>
+          <h2>Proteger PDF con clave</h2>
+          <p>Añade una contraseña obligatoria de apertura al documento PDF antes de compartirlo.</p>
+          <div class="field-group">
+            <label>Archivo PDF</label>
+            <input type="file" id="protFile" accept="application/pdf" />
+          </div>
+          <div class="field-group">
+            <label>Contraseña de apertura</label>
+            <input type="password" id="protPass" placeholder="Escribe una clave segura..." />
+          </div>
+          <button type="button" class="btn btn-accent" id="btnProtect">Cifrar y Descargar</button>
+        </div>
+
+        <div class="card full">
+          <span class="card-tag">04.3 · Desbloquear (Unlock PDF)</span>
+          <h2>Quitar contraseña a un PDF</h2>
+          <p>Elimina la clave de un PDF protegido del que conoces la contraseña para abrirlo libremente sin volver a escribirla.</p>
+          <div class="row">
+            <div class="field-group" style="flex:2; min-width:190px;">
+              <label>Archivo PDF protegido</label>
+              <input type="file" id="unlockFile" accept="application/pdf" />
+            </div>
+            <div class="field-group" style="flex:1; min-width:160px;">
+              <label>Contraseña actual</label>
+              <input type="password" id="unlockPass" placeholder="Clave actual..." />
+            </div>
+            <button type="button" class="btn btn-accent" id="btnUnlock">Desbloquear PDF</button>
+          </div>
+        </div>
+
+        <!-- Censura APLANADA (destruye el texto subyacente para que no se recupere en Word) -->
+        <div class="card full">
+          <span class="card-tag">04.4 · Privacidad Visual Irreversible (Redactar)</span>
+          <h2>Censurar zonas dibujando rectángulos</h2>
+          <p>Sube el PDF, elige la página y <strong>arrastra con el ratón o dedo</strong> sobre los datos sensibles (DNI, teléfono, IBAN). El documento se aplana para destruir el texto subyacente y que no se pueda recuperar en Word.</p>
+          <div class="row">
+            <div class="field-group" style="flex:2; min-width:190px;">
+              <label>Archivo PDF</label>
+              <input type="file" id="redactFile" accept="application/pdf" />
+            </div>
+            <div class="field-group" style="width:95px;">
+              <label>Página</label>
+              <input type="number" id="redactPageNum" value="1" min="1" />
+            </div>
+            <button type="button" class="btn" id="btnUndoRedact">Deshacer</button>
+            <button type="button" class="btn" id="btnClearRedacts">Limpiar pág.</button>
+            <button type="button" class="btn btn-accent" id="btnRedact">Descargar Censurado</button>
+          </div>
+
+          <div class="preview-stage" id="redactPreviewStage">
+            <div class="preview-hint" id="redactPreviewInfo">Arrastra sobre el documento para dibujar bloques negros de censura</div>
+            <canvas id="redactPreviewCanvas" class="preview-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div id="docxPrintContainer"></div>
+
+  <script>
+    const { PDFDocument, rgb, degrees, StandardFonts } = PDFLib;
+
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+    }
+
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+        if (btn.dataset.tab === "tab-edicion") setTimeout(resizeSigCanvas, 60);
+      };
+    });
+
+    function notify(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove("show"), 3600);
+    }
+
+    function downloadBytes(bytes, filename, mime = "application/pdf") {
+      const blob = new Blob([bytes], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }
+
+    function parsePageRange(str, total) {
+      if (!str || !str.trim()) return Array.from({ length: total }, (_, i) => i);
+      const set = new Set();
+      str.split(",").forEach((part) => {
+        const clean = part.trim();
+        if (clean.includes("-")) {
+          const [a, b] = clean.split("-").map(Number);
+          if (a && b) {
+            for (let i = Math.max(1, a); i <= Math.min(total, b); i++) set.add(i - 1);
+          }
+        } else {
+          const n = Number(clean);
+          if (n >= 1 && n <= total) set.add(n - 1);
+        }
+      });
+      return Array.from(set).sort((a, b) => a - b);
+    }
+
+    // =========================================================================
+    // 01 · ESTRUCTURA
+    // =========================================================================
+    document.getElementById("btnMerge").onclick = async () => {
+      const files = document.getElementById("mergeFiles").files;
+      if (files.length < 2) return notify("Selecciona al menos 2 archivos PDF.");
+      notify("Uniendo documentos...");
+      const merged = await PDFDocument.create();
+      for (const f of files) {
+        const doc = await PDFDocument.load(await f.arrayBuffer());
+        const pages = await merged.copyPages(doc, doc.getPageIndices());
+        pages.forEach((p) => merged.addPage(p));
+      }
+      downloadBytes(await merged.save(), "BentoPDF_Unido.pdf");
+      notify("PDF unido descargado.");
+    };
+
+    document.getElementById("btnSplit").onclick = async () => {
+      const file = document.getElementById("splitFile").files[0];
+      const range = document.getElementById("splitRange").value;
+      if (!file || !range.trim()) return notify("Selecciona un PDF e indica las páginas.");
+      const src = await PDFDocument.load(await file.arrayBuffer());
+      const indices = parsePageRange(range, src.getPageCount());
+      if (!indices.length) return notify("Rango de páginas no válido.");
+      const out = await PDFDocument.create();
+      const pages = await out.copyPages(src, indices);
+      pages.forEach((p) => out.addPage(p));
+      downloadBytes(await out.save(), "BentoPDF_Extraido.pdf");
+      notify(`Extraídas ${indices.length} páginas.`);
+    };
+
+    document.getElementById("btnRotate").onclick = async () => {
+      const file = document.getElementById("rotateFile").files[0];
+      if (!file) return notify("Selecciona un PDF.");
+      const deg = Number(document.getElementById("rotateDeg").value);
+      const doc = await PDFDocument.load(await file.arrayBuffer());
+      const indices = parsePageRange(document.getElementById("rotateRange").value, doc.getPageCount());
+      indices.forEach((idx) => {
+        const p = doc.getPage(idx);
+        p.setRotation(degrees((p.getRotation().angle + deg) % 360));
+      });
+      downloadBytes(await doc.save(), "BentoPDF_Rotado.pdf");
+      notify("PDF rotado descargado.");
+    };
+
+    document.getElementById("btnImgToPdf").onclick = async () => {
+      const files = document.getElementById("imgToPdfFiles").files;
+      if (!files.length) return notify("Selecciona al menos una imagen.");
+      const doc = await PDFDocument.create();
+      for (const f of files) {
+        const bytes = await f.arrayBuffer();
+        const img = f.type.includes("png")
+          ? await doc.embedPng(bytes)
+          : await doc.embedJpg(bytes);
+        const page = doc.addPage([img.width, img.height]);
+        page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+      }
+      downloadBytes(await doc.save(), "BentoPDF_Imagenes.pdf");
+      notify("PDF generado desde imágenes.");
+    };
+
+    document.getElementById("btnPdfToImg").onclick = async () => {
+      const file = document.getElementById("pdfToImgFile").files[0];
+      if (!file) return notify("Selecciona un PDF.");
+      const fmt = document.getElementById("pdfToImgFmt").value;
+      notify("Convirtiendo páginas a imágenes y creando ZIP...");
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        const zip = new JSZip();
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const vp = page.getViewport({ scale: 1.8 });
+          canvas.width = vp.width;
+          canvas.height = vp.height;
+          await page.render({ canvasContext: ctx, viewport: vp }).promise;
+          const dataUrl = canvas.toDataURL(`image/${fmt}`, 0.92);
+          const base64 = dataUrl.split(",")[1];
+          const ext = fmt === "jpeg" ? "jpg" : "png";
+          zip.file(`pagina_${String(i).padStart(2, "0")}.${ext}`, base64, { base64: true });
+        }
+
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        const outName = file.name.replace(/\.pdf$/i, "") + "_imagenes.zip";
+        downloadBytes(await zipBlob.arrayBuffer(), outName, "application/zip");
+        notify(`ZIP descargado con ${pdf.numPages} imágenes.`);
+      } catch (err) {
+        notify("Error al exportar imágenes del PDF.");
+      }
+    };
+
+    // =========================================================================
+    // 02 · WORD <-> PDF
+    // =========================================================================
+    document.getElementById("btnWordToPdf").onclick = async () => {
+      const file = document.getElementById("wordToPdfFile").files[0];
+      if (!file) return notify("Selecciona un archivo .docx.");
+      notify("Maquetando documento Word...");
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const container = document.getElementById("docxPrintContainer");
+        container.innerHTML = "";
+
+        const fitMode = document.getElementById("wordPdfMode").value === "fit";
+
+        await docx.renderAsync(arrayBuffer, container, null, {
+          className: "docx",
+          inWrapper: true,
+          ignoreWidth: fitMode,
+          ignoreHeight: fitMode,
+          breakPages: true,
+          useBase64URL: true
+        });
+
+        const originalTitle = document.title;
+        document.title = file.name.replace(/\.docx$/i, "");
+
+        notify("Elige 'Guardar como PDF' en la ventana que se abre.");
+        setTimeout(() => {
+          window.print();
+          document.title = originalTitle;
+        }, 350);
+      } catch (err) {
+        notify("Error al procesar el archivo .docx.");
+      }
+    };
+
+    document.getElementById("btnPdfToWord").onclick = async () => {
+      const file = document.getElementById("pdfToWordFile").files[0];
+      if (!file) return notify("Selecciona un archivo PDF.");
+      notify("Analizando estructura, títulos y estilos del PDF...");
+
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        const { Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak } = window.docx;
+        const pageBreakMode = document.getElementById("pdfWordBreak").value;
+        const children = [];
+
+        for (let p = 1; p <= pdf.numPages; p++) {
+          const page = await pdf.getPage(p);
+          const content = await page.getTextContent();
+          const items = content.items.filter((it) => it.str && it.str.trim().length > 0);
+
+          if (!items.length) continue;
+
+          const heights = items.map((it) => Math.round(Math.abs(it.transform[3]) || it.height || 11));
+          const freq = {};
+          let bodySize = 11;
+          let maxCount = 0;
+          heights.forEach((h) => {
+            freq[h] = (freq[h] || 0) + 1;
+            if (freq[h] > maxCount) {
+              maxCount = freq[h];
+              bodySize = h;
+            }
+          });
+
+          items.sort((a, b) => {
+            const yDiff = b.transform[5] - a.transform[5];
+            if (Math.abs(yDiff) > 4) return yDiff;
+            return a.transform[4] - b.transform[4];
+          });
+
+          const lines = [];
+          let currentLine = [];
+          let lastY = null;
+
+          for (const item of items) {
+            const y = item.transform[5];
+            if (lastY !== null && Math.abs(y - lastY) > 4.5) {
+              lines.push(currentLine);
+              currentLine = [item];
+            } else {
+              currentLine.push(item);
+            }
+            lastY = y;
+          }
+          if (currentLine.length) lines.push(currentLine);
+
+          let paraRuns = [];
+          let prevLineY = null;
+          let prevLineHeight = bodySize;
+
+          const flushParagraph = (isHeading1, isHeading2) => {
+            if (!paraRuns.length) return;
+            const opts = {
+              children: paraRuns,
+              spacing: { after: isHeading1 || isHeading2 ? 160 : 100 }
+            };
+            if (isHeading1) opts.heading = HeadingLevel.HEADING_1;
+            else if (isHeading2) opts.heading = HeadingLevel.HEADING_2;
+            children.push(new Paragraph(opts));
+            paraRuns = [];
+          };
+
+          for (const line of lines) {
+            line.sort((a, b) => a.transform[4] - b.transform[4]);
+            const lineY = line[0].transform[5];
+            const lineHeight = Math.round(Math.abs(line[0].transform[3]) || line[0].height || bodySize);
+
+            const isH1 = lineHeight >= bodySize * 1.45;
+            const isH2 = !isH1 && lineHeight >= bodySize * 1.2;
+
+            const verticalGap = prevLineY !== null ? Math.abs(prevLineY - lineY) : 0;
+            const isNewParagraph =
+              prevLineY === null ||
+              isH1 ||
+              isH2 ||
+              verticalGap > prevLineHeight * 1.45;
+
+            if (isNewParagraph && paraRuns.length) {
+              flushParagraph(false, false);
+            } else if (!isNewParagraph && paraRuns.length) {
+              paraRuns.push(new TextRun(" "));
+            }
+
+            let prevRightX = null;
+            for (const item of line) {
+              const x = item.transform[4];
+              const fontName = (item.fontName || "").toLowerCase();
+              const isBold = fontName.includes("bold") || fontName.includes("black") || fontName.includes("heavy");
+              const isItalic = fontName.includes("italic") || fontName.includes("oblique");
+
+              if (prevRightX !== null) {
+                const gapX = x - prevRightX;
+                if (gapX > 25) {
+                  paraRuns.push(new TextRun("\t"));
+                } else if (gapX > 2 && !paraRuns[paraRuns.length - 1]?.text?.endsWith(" ")) {
+                  paraRuns.push(new TextRun(" "));
+                }
+              }
+
+              paraRuns.push(
+                new TextRun({
+                  text: item.str,
+                  bold: isBold,
+                  italics: isItalic,
+                  size: Math.max(16, Math.min(56, Math.round(lineHeight * 2)))
+                })
+              );
+
+              prevRightX = x + (item.width || item.str.length * (lineHeight * 0.5));
+            }
+
+            if (isH1 || isH2) {
+              flushParagraph(isH1, isH2);
+              prevLineY = null;
+            } else {
+              prevLineY = lineY;
+              prevLineHeight = lineHeight;
+            }
+          }
+
+          flushParagraph(false, false);
+
+          if (p < pdf.numPages) {
+            if (pageBreakMode === "break") {
+              children.push(new Paragraph({ children: [new PageBreak()] }));
+            } else {
+              children.push(new Paragraph({ children: [new TextRun("")] }));
+            }
+          }
+        }
+
+        const doc = new Document({
+          sections: [{
+            properties: {
+              page: { margin: { top: 1134, right: 1134, bottom: 1134, left: 1134 } }
+            },
+            children
+          }]
+        });
+
+        const blob = await Packer.toBlob(doc);
+        const outName = file.name.replace(/\.pdf$/i, "") + ".docx";
+        downloadBytes(
+          await blob.arrayBuffer(),
+          outName,
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        );
+        notify("Archivo Word (.docx) estructurado descargado.");
+      } catch (err) {
+        notify("No se pudo extraer texto del PDF (puede ser un documento escaneado).");
+      }
+    };
+
+    // =========================================================================
+    // 03 · EDICIÓN (NUMERACIÓN, MARCA DE AGUA APLANADA, RECORTE, FIRMA)
+    // =========================================================================
+    document.getElementById("btnNum").onclick = async () => {
+      const file = document.getElementById("numFile").files[0];
+      if (!file) return notify("Selecciona un PDF.");
+      const doc = await PDFDocument.load(await file.arrayBuffer());
+      const font = await doc.embedFont(StandardFonts.HelveticaBold);
+      const fmt = document.getElementById("numFormat").value;
+      const pos = document.getElementById("numPos").value;
+      const pages = doc.getPages();
+      const total = pages.length;
+
+      pages.forEach((page, i) => {
+        const { width } = page.getSize();
+        const label =
+          fmt === "simple" ? `${i + 1}` :
+          fmt === "total" ? `${i + 1} / ${total}` :
+          `Página ${i + 1} de ${total}`;
+        const textWidth = font.widthOfTextAtSize(label, 10);
+        const x =
+          pos === "left" ? 36 :
+          pos === "center" ? (width - textWidth) / 2 :
+          width - textWidth - 36;
+        page.drawText(label, { x, y: 22, size: 10, font, color: rgb(0.15, 0.15, 0.15) });
+      });
+
+      downloadBytes(await doc.save(), "BentoPDF_Numerado.pdf");
+      notify("Páginas numeradas.");
+    };
+
+    // 03.2 · MARCA DE AGUA APLANADA SOBRE PÍXELES (INSEPARABLE EN WORD)
+    document.getElementById("btnWm").onclick = async () => {
+      const file = document.getElementById("wmFile").files[0];
+      const text = document.getElementById("wmText").value.trim();
+      if (!file || !text) return notify("Selecciona un PDF y escribe el texto de protección.");
+
+      const opacity = Number(document.getElementById("wmOpacity").value);
+      const style = document.getElementById("wmStyle").value;
+      notify("Aplanando documento con marca de agua permanente...");
+
+      try {
+        const srcPdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        const outDoc = await PDFDocument.create();
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        for (let i = 1; i <= srcPdf.numPages; i++) {
+          const page = await srcPdf.getPage(i);
+          const origVp = page.getViewport({ scale: 1.0 });
+          const renderVp = page.getViewport({ scale: 2.0 }); // Alta nitidez (~150-200 DPI)
+          canvas.width = renderVp.width;
+          canvas.height = renderVp.height;
+
+          await page.render({ canvasContext: ctx, viewport: renderVp }).promise;
+
+          ctx.save();
+          ctx.fillStyle = `rgba(217, 56, 30, ${opacity})`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+
+          if (style === "tiled") {
+            const fontSize = Math.max(20, Math.round(canvas.width / 26));
+            ctx.font = `800 ${fontSize}px monospace`;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate((-32 * Math.PI) / 180);
+
+            const stepX = Math.max(260, ctx.measureText(text).width + 90);
+            const stepY = fontSize * 4.5;
+            const diag = Math.hypot(canvas.width, canvas.height);
+
+            for (let y = -diag; y <= diag; y += stepY) {
+              for (let x = -diag; x <= diag; x += stepX) {
+                ctx.fillText(text, x, y);
+              }
+            }
+          } else {
+            const fontSize = Math.max(36, Math.min(110, Math.round(canvas.width / (text.length * 0.65))));
+            ctx.font = `900 ${fontSize}px sans-serif`;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate((-38 * Math.PI) / 180);
+            ctx.fillText(text, 0, 0);
+          }
+          ctx.restore();
+
+          const jpgDataUrl = canvas.toDataURL("image/jpeg", 0.92);
+          const jpgImg = await outDoc.embedJpg(jpgDataUrl);
+          const newPage = outDoc.addPage([origVp.width, origVp.height]);
+          newPage.drawImage(jpgImg, {
+            x: 0,
+            y: 0,
+            width: origVp.width,
+            height: origVp.height
+          });
+        }
+
+        downloadBytes(await outDoc.save(), "BentoPDF_MarcaAgua_Protegido.pdf");
+        notify("PDF protegido y aplanado descargado (marca inseparable).");
+      } catch (err) {
+        console.error(err);
+        notify("Error al aplicar la marca de agua permanente.");
+      }
+    };
+
+    document.getElementById("btnCrop").onclick = async () => {
+      const file = document.getElementById("cropFile").files[0];
+      if (!file) return notify("Selecciona un PDF.");
+      const cx = Number(document.getElementById("cropX").value) || 0;
+      const cy = Number(document.getElementById("cropY").value) || 0;
+      const doc = await PDFDocument.load(await file.arrayBuffer());
+
+      doc.getPages().forEach((page) => {
+        const { width, height } = page.getSize();
+        const newW = Math.max(100, width - cx * 2);
+        const newH = Math.max(100, height - cy * 2);
+        page.setCropBox(cx, cy, newW, newH);
+      });
+
+      downloadBytes(await doc.save(), "BentoPDF_Recortado.pdf");
+      notify("Márgenes recortados.");
+    };
+
+    // Lienzo de firma táctil + Vista previa interactiva
+    const sigCanvas = document.getElementById("sigCanvas");
+    const sigCtx = sigCanvas.getContext("2d");
+    let sigDrawing = false;
+    let hasSig = false;
+    let signBaseImg = null;
+    let signPosNorm = { x: 0.75, y: 0.86 };
+    let draggingSig = false;
+
+    function resizeSigCanvas() {
+      const rect = sigCanvas.getBoundingClientRect();
+      if (!rect.width) return;
+      const prevData = hasSig ? sigCanvas.toDataURL() : null;
+      sigCanvas.width = rect.width;
+      sigCanvas.height = 120;
+      sigCtx.strokeStyle = "#111111";
+      sigCtx.lineWidth = 2.6;
+      sigCtx.lineCap = "round";
+      sigCtx.lineJoin = "round";
+      if (prevData) {
+        const img = new Image();
+        img.onload = () => sigCtx.drawImage(img, 0, 0, sigCanvas.width, sigCanvas.height);
+        img.src = prevData;
+      }
+    }
+    window.addEventListener("resize", resizeSigCanvas);
+    setTimeout(resizeSigCanvas, 120);
+
+    sigCanvas.addEventListener("pointerdown", (e) => {
+      sigDrawing = true;
+      hasSig = true;
+      const r = sigCanvas.getBoundingClientRect();
+      sigCtx.beginPath();
+      sigCtx.moveTo(e.clientX - r.left, e.clientY - r.top);
+    });
+    sigCanvas.addEventListener("pointermove", (e) => {
+      if (!sigDrawing) return;
+      const r = sigCanvas.getBoundingClientRect();
+      sigCtx.lineTo(e.clientX - r.left, e.clientY - r.top);
+      sigCtx.stroke();
+    });
+    window.addEventListener("pointerup", () => {
+      if (sigDrawing) {
+        sigDrawing = false;
+        redrawSignPreview();
+      }
+      draggingSig = false;
+    });
+
+    document.getElementById("btnClearSig").onclick = () => {
+      sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+      hasSig = false;
+      redrawSignPreview();
+    };
+
+    async function renderSignPreview() {
+      const file = document.getElementById("signFile").files[0];
+      if (!file) return;
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        const pageInput = document.getElementById("signPageNum");
+        pageInput.max = pdf.numPages;
+        const pNum = Math.min(pdf.numPages, Math.max(1, Number(pageInput.value) || 1));
+        pageInput.value = pNum;
+
+        const page = await pdf.getPage(pNum);
+        const vp = page.getViewport({ scale: 1.15 });
+        const c = document.getElementById("signPreviewCanvas");
+        c.width = vp.width;
+        c.height = vp.height;
+        await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+        signBaseImg = c.getContext("2d").getImageData(0, 0, c.width, c.height);
+        document.getElementById("signPreviewInfo").textContent =
+          `Página ${pNum} de ${pdf.numPages} · Toca o arrastra para situar la firma`;
+        document.getElementById("signPreviewStage").classList.add("active");
+        redrawSignPreview();
+      } catch (e) {
+        notify("No se pudo previsualizar este PDF.");
+      }
+    }
+
+    function redrawSignPreview() {
+      if (!signBaseImg) return;
+      const c = document.getElementById("signPreviewCanvas");
+      const ctx = c.getContext("2d");
+      ctx.putImageData(signBaseImg, 0, 0);
+      if (hasSig) {
+        const scaleVal = Number(document.getElementById("signScale").value);
+        const w = (scaleVal / 600) * c.width;
+        const h = (sigCanvas.height / sigCanvas.width) * w;
+        const x = signPosNorm.x * c.width - w / 2;
+        const y = signPosNorm.y * c.height - h / 2;
+        ctx.drawImage(sigCanvas, x, y, w, h);
+        ctx.strokeStyle = "#d9381e";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([5, 3]);
+        ctx.strokeRect(x, y, w, h);
+        ctx.setLineDash([]);
+      }
+    }
+
+    document.getElementById("signFile").onchange = renderSignPreview;
+    document.getElementById("signPageNum").onchange = renderSignPreview;
+    document.getElementById("signScale").onchange = redrawSignPreview;
+
+    const signPrevCanvas = document.getElementById("signPreviewCanvas");
+    function updateSignPos(e) {
+      const r = signPrevCanvas.getBoundingClientRect();
+      signPosNorm = {
+        x: Math.max(0.05, Math.min(0.95, (e.clientX - r.left) / r.width)),
+        y: Math.max(0.05, Math.min(0.95, (e.clientY - r.top) / r.height))
+      };
+      redrawSignPreview();
+    }
+    signPrevCanvas.addEventListener("pointerdown", (e) => { draggingSig = true; updateSignPos(e); });
+    signPrevCanvas.addEventListener("pointermove", (e) => { if (draggingSig) updateSignPos(e); });
+
+    document.getElementById("btnSign").onclick = async () => {
+      const file = document.getElementById("signFile").files[0];
+      if (!file || !hasSig) return notify("Selecciona un PDF y dibuja tu firma.");
+      const doc = await PDFDocument.load(await file.arrayBuffer());
+      const pngDataUrl = sigCanvas.toDataURL("image/png");
+      const sigImg = await doc.embedPng(pngDataUrl);
+      const mode = document.getElementById("signPages").value;
+      const scaleVal = Number(document.getElementById("signScale").value);
+      const pages = doc.getPages();
+      const selIdx = Math.min(pages.length - 1, Math.max(0, (Number(document.getElementById("signPageNum").value) || 1) - 1));
+
+      const targetPages =
+        mode === "all" ? pages :
+        mode === "last" ? [pages[pages.length - 1]] :
+        [pages[selIdx]];
+
+      targetPages.forEach((page) => {
+        const { width, height } = page.getSize();
+        const w = (scaleVal / 600) * width;
+        const h = (sigCanvas.height / sigCanvas.width) * w;
+        const x = signPosNorm.x * width - w / 2;
+        const y = height - (signPosNorm.y * height) - h / 2;
+        page.drawImage(sigImg, { x, y, width: w, height: h });
+      });
+
+      downloadBytes(await doc.save(), "BentoPDF_Firmado.pdf");
+      notify("PDF firmado descargado.");
+    };
+
+    // =========================================================================
+    // 04 · SEGURIDAD (COMPRESIÓN, CIFRADO, DESBLOQUEO, CENSURA APLANADA)
+    // =========================================================================
+    document.getElementById("btnCompress").onclick = async () => {
+      const file = document.getElementById("compFile").files[0];
+      if (!file) return notify("Selecciona un PDF para comprimir.");
+      const quality = Number(document.getElementById("compQuality").value);
+      notify("Comprimiendo páginas en local...");
+
+      const srcPdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+      const outDoc = await PDFDocument.create();
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      for (let i = 1; i <= srcPdf.numPages; i++) {
+        const page = await srcPdf.getPage(i);
+        const viewport = page.getViewport({ scale: quality < 0.6 ? 1.15 : 1.45 });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        const jpgDataUrl = canvas.toDataURL("image/jpeg", quality);
+        const jpgImg = await outDoc.embedJpg(jpgDataUrl);
+        const newPage = outDoc.addPage([viewport.width, viewport.height]);
+        newPage.drawImage(jpgImg, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+      }
+
+      const saved = await outDoc.save();
+      const origKB = Math.round(file.size / 1024);
+      const newKB = Math.round(saved.byteLength / 1024);
+      downloadBytes(saved, "BentoPDF_Comprimido.pdf");
+      notify(`Comprimido: ${origKB} KB → ${newKB} KB`);
+    };
+
+    document.getElementById("btnProtect").onclick = async () => {
+      const file = document.getElementById("protFile").files[0];
+      const pass = document.getElementById("protPass").value;
+      if (!file || !pass) return notify("Selecciona un PDF y escribe una contraseña.");
+      notify("Cifrando PDF con contraseña...");
+      try {
+        const srcDoc = await PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true });
+        const outDoc = await PDFDocument.create();
+        const pages = await outDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+        pages.forEach((p) => outDoc.addPage(p));
+
+        await outDoc.encrypt({
+          userPassword: pass,
+          ownerPassword: pass + "_bento_owner",
+          permissions: {
+            printing: "highResolution",
+            modifying: false,
+            copying: false,
+            annotating: false,
+            fillingForms: true,
+            contentAccessibility: true,
+            documentAssembly: false
+          }
+        });
+
+        const pdfBytes = await outDoc.save({ useObjectStreams: false });
+        downloadBytes(pdfBytes, "BentoPDF_Protegido.pdf");
+        notify("PDF cifrado con clave descargado.");
+      } catch (err) {
+        notify("Error al cifrar: " + (err.message || "formato no compatible"));
+      }
+    };
+
+    document.getElementById("btnUnlock").onclick = async () => {
+      const file = document.getElementById("unlockFile").files[0];
+      const pass = document.getElementById("unlockPass").value;
+      if (!file || !pass) return notify("Selecciona el PDF protegido y escribe su contraseña.");
+      notify("Desbloqueando PDF...");
+      try {
+        const srcDoc = await PDFDocument.load(await file.arrayBuffer(), { password: pass });
+        const cleanDoc = await PDFDocument.create();
+        const pages = await cleanDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+        pages.forEach((p) => cleanDoc.addPage(p));
+        downloadBytes(await cleanDoc.save(), "BentoPDF_Desbloqueado.pdf");
+        notify("PDF desbloqueado sin contraseña.");
+      } catch (err) {
+        notify("Contraseña incorrecta o cifrado no soportado.");
+      }
+    };
+
+    // 04.4 · CENSURA VISUAL INTERACTIVA APLANADA (DESTRUYE TEXTO SUBYACENTE)
+    let redactBaseImg = null;
+    let redactBoxesByPage = {};
+    let currentRedactPage = 1;
+    let rDrawing = false;
+    let rStart = null;
+
+    async function renderRedactPreview(resetAll = false) {
+      const file = document.getElementById("redactFile").files[0];
+      if (!file) return;
+      if (resetAll) redactBoxesByPage = {};
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+        const pageInput = document.getElementById("redactPageNum");
+        pageInput.max = pdf.numPages;
+        const pNum = Math.min(pdf.numPages, Math.max(1, Number(pageInput.value) || 1));
+        pageInput.value = pNum;
+        currentRedactPage = pNum;
+
+        const page = await pdf.getPage(pNum);
+        const vp = page.getViewport({ scale: 1.15 });
+        const c = document.getElementById("redactPreviewCanvas");
+        c.width = vp.width;
+        c.height = vp.height;
+        await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+        redactBaseImg = c.getContext("2d").getImageData(0, 0, c.width, c.height);
+
+        document.getElementById("redactPreviewInfo").textContent =
+          `Página ${pNum} de ${pdf.numPages} · Arrastra para censurar datos sensibles`;
+        document.getElementById("redactPreviewStage").classList.add("active");
+        redrawRedactPreview();
+      } catch (e) {
+        notify("No se pudo previsualizar este PDF.");
+      }
+    }
+
+    function redrawRedactPreview(tempBox = null) {
+      if (!redactBaseImg) return;
+      const c = document.getElementById("redactPreviewCanvas");
+      const ctx = c.getContext("2d");
+      ctx.putImageData(redactBaseImg, 0, 0);
+      ctx.fillStyle = "#111111";
+      const list = redactBoxesByPage[currentRedactPage] || [];
+      list.forEach((b) => ctx.fillRect(b.x * c.width, b.y * c.height, b.w * c.width, b.h * c.height));
+      if (tempBox) {
+        ctx.fillStyle = "rgba(217, 56, 30, 0.45)";
+        ctx.fillRect(tempBox.x * c.width, tempBox.y * c.height, tempBox.w * c.width, tempBox.h * c.height);
+      }
+    }
+
+    document.getElementById("redactFile").onchange = () => renderRedactPreview(true);
+    document.getElementById("redactPageNum").onchange = () => renderRedactPreview(false);
+
+    document.getElementById("btnUndoRedact").onclick = () => {
+      const list = redactBoxesByPage[currentRedactPage];
+      if (list && list.length) {
+        list.pop();
+        redrawRedactPreview();
+      }
+    };
+
+    document.getElementById("btnClearRedacts").onclick = () => {
+      redactBoxesByPage[currentRedactPage] = [];
+      redrawRedactPreview();
+    };
+
+    const rCanvas = document.getElementById("redactPreviewCanvas");
+    rCanvas.addEventListener("pointerdown", (e) => {
+      const r = rCanvas.getBoundingClientRect();
+      rDrawing = true;
+      rStart = {
+        x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)),
+        y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height))
+      };
+    });
+
+    rCanvas.addEventListener("pointermove", (e) => {
+      if (!rDrawing || !rStart) return;
+      const r = rCanvas.getBoundingClientRect();
+      const cx = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+      const cy = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+      redrawRedactPreview({
+        x: Math.min(rStart.x, cx),
+        y: Math.min(rStart.y, cy),
+        w: Math.abs(cx - rStart.x),
+        h: Math.abs(cy - rStart.y)
+      });
+    });
+
+    window.addEventListener("pointerup", (e) => {
+      if (!rDrawing || !rStart) return;
+      rDrawing = false;
+      const r = rCanvas.getBoundingClientRect();
+      const cx = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+      const cy = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+      const box = {
+        x: Math.min(rStart.x, cx),
+        y: Math.min(rStart.y, cy),
+        w: Math.abs(cx - rStart.x),
+        h: Math.abs(cy - rStart.y)
+      };
+      if (box.w > 0.01 && box.h > 0.01) {
+        if (!redactBoxesByPage[currentRedactPage]) redactBoxesByPage[currentRedactPage] = [];
+        redactBoxesByPage[currentRedactPage].push(box);
+      }
+      rStart = null;
+      redrawRedactPreview();
+    });
+
+    document.getElementById("btnRedact").onclick = async () => {
+      const file = document.getElementById("redactFile").files[0];
+      const totalMarks = Object.values(redactBoxesByPage).reduce((acc, arr) => acc + arr.length, 0);
+      if (!file || !totalMarks) return notify("Sube un PDF y dibuja al menos un bloque negro sobre la vista previa.");
+
+      notify("Censurando y aplanando documento de forma irreversible...");
+      const srcPdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+      const outDoc = await PDFDocument.create();
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      for (let i = 1; i <= srcPdf.numPages; i++) {
+        const page = await srcPdf.getPage(i);
+        const origVp = page.getViewport({ scale: 1.0 });
+        const renderVp = page.getViewport({ scale: 2.0 });
+        canvas.width = renderVp.width;
+        canvas.height = renderVp.height;
+
+        await page.render({ canvasContext: ctx, viewport: renderVp }).promise;
+
+        const boxes = redactBoxesByPage[i] || [];
+        ctx.fillStyle = "#000000";
+        boxes.forEach((b) => {
+          ctx.fillRect(
+            b.x * canvas.width,
+            b.y * canvas.height,
+            b.w * canvas.width,
+            b.h * canvas.height
+          );
+        });
+
+        const jpgDataUrl = canvas.toDataURL("image/jpeg", 0.92);
+        const jpgImg = await outDoc.embedJpg(jpgDataUrl);
+        const newPage = outDoc.addPage([origVp.width, origVp.height]);
+        newPage.drawImage(jpgImg, {
+          x: 0,
+          y: 0,
+          width: origVp.width,
+          height: origVp.height
+        });
+      }
+
+      downloadBytes(await outDoc.save(), "BentoPDF_Censurado.pdf");
+      notify(`PDF censurado e irrecuperable descargado (${totalMarks} zona/s).`);
+    };
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f5f5f3" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <title>Bento Voz</title>
+  <style>
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --ink: #111111;
+      --muted: #5e5e5a;
+      --border: #dcdcd6;
+      --accent: #d9381e;
+      --accent-hover: #b82d16;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 760px;
+      padding: 20px 14px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .brand h1 span { color: var(--accent); }
+
+    .brand p {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .rec-card {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .timer-big {
+      font-family: var(--mono);
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+
+    .timer-big.recording { color: var(--accent); }
+
+    #waveCanvas {
+      width: 100%;
+      height: 84px;
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      display: block;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      padding: 10px 14px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover:not(:disabled) { background: var(--ink); color: var(--surface); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-accent {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-accent:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .live-markers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .marker-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 4px 8px;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+    }
+
+    .clips-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .clip-card {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .clip-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .clip-title {
+      font-weight: 800;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+    }
+
+    .clip-meta {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+
+    audio {
+      width: 100%;
+      height: 36px;
+    }
+
+    .mini-btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 5px 9px;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--ink);
+    }
+
+    .mini-btn:hover { background: var(--ink); color: var(--surface); }
+    .mini-btn.del:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1><span>BENTO</span> VOZ</h1>
+        <p>Grabadora local · Onda en vivo · Marcadores y WAV</p>
+      </div>
+      <span id="recStatus" style="font-family:var(--mono); font-size:0.66rem; font-weight:700; padding:5px 9px; border:1px solid var(--ink); background:var(--surface);">
+        LISTO
+      </span>
+    </header>
+
+    <section class="rec-card">
+      <div class="timer-big" id="timerDisplay">00:00</div>
+      <canvas id="waveCanvas" width="680" height="84"></canvas>
+
+      <div class="btn-row">
+        <button type="button" class="btn btn-accent" id="startBtn">● Grabar</button>
+        <button type="button" class="btn" id="markBtn" disabled>+ Marcar minuto</button>
+        <button type="button" class="btn" id="stopBtn" disabled>■ Detener y guardar</button>
+      </div>
+
+      <div class="live-markers" id="liveMarkers"></div>
+    </section>
+
+    <div style="font-family:var(--mono); font-size:0.68rem; color:var(--muted); text-transform:uppercase;">
+      Grabaciones de esta sesión (<span id="clipCount">0</span>)
+    </div>
+
+    <div class="clips-list" id="clipsList"></div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    let mediaStream = null;
+    let scriptProcessor = null;
+    let analyser = null;
+    let isRecording = false;
+    let recordedBuffers = [];
+    let sampleRate = 44100;
+    let startTime = 0;
+    let timerInterval = null;
+    let currentMarkers = [];
+    let clips = [];
+
+    const timerDisplay = document.getElementById("timerDisplay");
+    const waveCanvas = document.getElementById("waveCanvas");
+    const waveCtx = waveCanvas.getContext("2d");
+    const startBtn = document.getElementById("startBtn");
+    const markBtn = document.getElementById("markBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const recStatus = document.getElementById("recStatus");
+
+    function formatTime(sec) {
+      const m = String(Math.floor(sec / 60)).padStart(2, "0");
+      const s = String(Math.floor(sec % 60)).padStart(2, "0");
+      return `${m}:${s}`;
+    }
+
+    function drawIdleWave() {
+      waveCtx.fillStyle = "#f5f5f3";
+      waveCtx.fillRect(0, 0, waveCanvas.width, waveCanvas.height);
+      waveCtx.strokeStyle = "#111111";
+      waveCtx.lineWidth = 2;
+      waveCtx.beginPath();
+      waveCtx.moveTo(0, waveCanvas.height / 2);
+      waveCtx.lineTo(waveCanvas.width, waveCanvas.height / 2);
+      waveCtx.stroke();
+    }
+
+    function drawLiveWave() {
+      if (!isRecording || !analyser) return;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteTimeDomainData(data);
+
+      waveCtx.fillStyle = "#f5f5f3";
+      waveCtx.fillRect(0, 0, waveCanvas.width, waveCanvas.height);
+      waveCtx.strokeStyle = "#d9381e";
+      waveCtx.lineWidth = 2.5;
+      waveCtx.beginPath();
+
+      const sliceWidth = waveCanvas.width / data.length;
+      let x = 0;
+      for (let i = 0; i < data.length; i++) {
+        const v = data[i] / 128.0;
+        const y = (v * waveCanvas.height) / 2;
+        if (i === 0) waveCtx.moveTo(x, y);
+        else waveCtx.lineTo(x, y);
+        x += sliceWidth;
+      }
+      waveCtx.stroke();
+      requestAnimationFrame(drawLiveWave);
+    }
+
+    startBtn.onclick = async () => {
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        sampleRate = audioCtx.sampleRate;
+
+        const source = audioCtx.createMediaStreamSource(mediaStream);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+
+        scriptProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
+        recordedBuffers = [];
+        currentMarkers = [];
+        document.getElementById("liveMarkers").innerHTML = "";
+
+        scriptProcessor.onaudioprocess = e => {
+          if (!isRecording) return;
+          const channelData = e.inputBuffer.getChannelData(0);
+          recordedBuffers.push(new Float32Array(channelData));
+        };
+
+        source.connect(analyser);
+        analyser.connect(scriptProcessor);
+        scriptProcessor.connect(audioCtx.destination);
+
+        isRecording = true;
+        startTime = Date.now();
+        timerDisplay.classList.add("recording");
+        recStatus.textContent = "GRABANDO";
+        recStatus.style.borderColor = "var(--accent)";
+        recStatus.style.color = "var(--accent)";
+
+        startBtn.disabled = true;
+        markBtn.disabled = false;
+        stopBtn.disabled = false;
+
+        timerInterval = setInterval(() => {
+          const elapsed = (Date.now() - startTime) / 1000;
+          timerDisplay.textContent = formatTime(elapsed);
+        }, 250);
+
+        drawLiveWave();
+      } catch (err) {
+        alert("No se pudo acceder al micrófono. Revisa los permisos del navegador.");
+      }
+    };
+
+    markBtn.onclick = () => {
+      if (!isRecording) return;
+      const elapsed = (Date.now() - startTime) / 1000;
+      const stamp = formatTime(elapsed);
+      currentMarkers.push(stamp);
+      const chip = document.createElement("span");
+      chip.className = "marker-chip";
+      chip.textContent = `Marca #${currentMarkers.length} · ${stamp}`;
+      document.getElementById("liveMarkers").appendChild(chip);
+    };
+
+    stopBtn.onclick = () => {
+      if (!isRecording) return;
+      isRecording = false;
+      clearInterval(timerInterval);
+
+      const durationSec = (Date.now() - startTime) / 1000;
+      if (scriptProcessor) scriptProcessor.disconnect();
+      if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+      if (audioCtx) audioCtx.close();
+
+      timerDisplay.classList.remove("recording");
+      timerDisplay.textContent = "00:00";
+      recStatus.textContent = "LISTO";
+      recStatus.style.borderColor = "var(--ink)";
+      recStatus.style.color = "var(--ink)";
+
+      startBtn.disabled = false;
+      markBtn.disabled = true;
+      stopBtn.disabled = true;
+      drawIdleWave();
+
+      const wavBlob = encodeWAV(recordedBuffers, sampleRate);
+      const url = URL.createObjectURL(wavBlob);
+
+      clips.unshift({
+        id: Date.now(),
+        title: `Nota de voz ${clips.length + 1}`,
+        duration: formatTime(durationSec),
+        date: new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+        markers: [...currentMarkers],
+        url
+      });
+      renderClips();
+    };
+
+    // Codificador PCM -> WAV estándar (16-bit mono)
+    function encodeWAV(buffers, rate) {
+      let totalLength = 0;
+      buffers.forEach(b => (totalLength += b.length));
+      const samples = new Float32Array(totalLength);
+      let offset = 0;
+      buffers.forEach(b => {
+        samples.set(b, offset);
+        offset += b.length;
+      });
+
+      const buffer = new ArrayBuffer(44 + samples.length * 2);
+      const view = new DataView(buffer);
+
+      const writeStr = (off, str) => {
+        for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i));
+      };
+
+      writeStr(0, "RIFF");
+      view.setUint32(4, 36 + samples.length * 2, true);
+      writeStr(8, "WAVE");
+      writeStr(12, "fmt ");
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, rate, true);
+      view.setUint32(28, rate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeStr(36, "data");
+      view.setUint32(40, samples.length * 2, true);
+
+      let pos = 44;
+      for (let i = 0; i < samples.length; i++, pos += 2) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(pos, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+      }
+
+      return new Blob([view], { type: "audio/wav" });
+    }
+
+    function renderClips() {
+      const list = document.getElementById("clipsList");
+      document.getElementById("clipCount").textContent = clips.length;
+      list.innerHTML = "";
+
+      clips.forEach(c => {
+        const card = document.createElement("div");
+        card.className = "clip-card";
+        card.innerHTML = `
+          <div class="clip-top">
+            <div>
+              <div class="clip-title">${c.title}</div>
+              <div class="clip-meta">${c.date} · Duración: ${c.duration} ${c.markers.length ? "· Marcadores: " + c.markers.join(", ") : ""}</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <a class="mini-btn" href="${c.url}" download="${c.title.replace(/\s+/g, "_")}.wav">Descargar WAV</a>
+              <button type="button" class="mini-btn del" data-act="del">✕</button>
+            </div>
+          </div>
+          <audio controls src="${c.url}"></audio>
+        `;
+        card.querySelector('[data-act="del"]').onclick = () => {
+          URL.revokeObjectURL(c.url);
+          clips = clips.filter(x => x.id !== c.id);
+          renderClips();
+        };
+        list.appendChild(card);
+      });
+    }
+
+    drawIdleWave();
+    if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+  </script>
+</body>
+</html>

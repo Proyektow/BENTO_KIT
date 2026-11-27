@@ -1,0 +1,17 @@
+{
+  "name": "Bento Claves",
+  "short_name": "Bento Claves",
+  "description": "Generador de contraseñas seguras y bóveda local cifrada con AES-256.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f5f3",
+  "theme_color": "#f5f5f3",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

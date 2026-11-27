@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#f5f5f3" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icon.svg" />
+  <title>BENTO-FOLIO — Escáner PDF</title>
+  <style>
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --surface-subtle: #ecece8;
+      --ink: #111111;
+      --ink-secondary: #5e5e5a;
+      --border: #dcdcd6;
+      --border-strong: #111111;
+      --accent: #d9381e;
+      --accent-hover: #b82d16;
+      --ok: #1b7a3d;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Arial, sans-serif;
+      --radius: 2px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--sans);
+      background-color: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      font-variant-numeric: tabular-nums;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 540px;
+      padding: 24px 18px 84px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    /* Header Editorial */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-bottom: 14px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--ink);
+      flex-shrink: 0;
+    }
+
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+
+    .brand-text p {
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      color: var(--ink-secondary);
+      margin-top: 4px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* Botones */
+    .btn {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      color: var(--ink);
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: background-color 0.12s, color 0.12s, border-color 0.12s;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--ink);
+      color: var(--surface);
+    }
+
+    .btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .btn-accent:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn-ink {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .btn-ink:hover:not(:disabled) {
+      background: #2b2b2b;
+      color: #ffffff;
+    }
+
+    /* Captura */
+    .capture-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .capture-btn {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      color: var(--ink);
+      padding: 18px 14px;
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      cursor: pointer;
+      transition: background-color 0.12s, color 0.12s;
+    }
+
+    .capture-btn:hover {
+      background: var(--ink);
+      color: var(--surface);
+    }
+
+    .capture-btn:hover .sub {
+      color: #b5b5b0;
+    }
+
+    .capture-btn .main {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .capture-btn .sub {
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      color: var(--ink-secondary);
+    }
+
+    /* Editor de Recorte */
+    .editor-panel {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--surface);
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    .editor-panel.active {
+      display: flex;
+    }
+
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .editor-header h2 {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid var(--ink);
+      overflow: hidden;
+      touch-action: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #cropCanvas {
+      display: block;
+      max-width: 100%;
+      max-height: 56vh;
+      cursor: crosshair;
+    }
+
+    .filter-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .filter-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--ink-secondary);
+      padding: 8px 6px;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .filter-btn.active {
+      border-color: var(--ink);
+      background: var(--ink);
+      color: #ffffff;
+    }
+
+    .editor-actions {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 8px;
+    }
+
+    /* Cola de Páginas */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+
+    .section-header h2 {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink);
+    }
+
+    .pages-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .page-card {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .page-thumb-box {
+      width: 100%;
+      aspect-ratio: 1 / 1.38;
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .page-thumb-box img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .page-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+
+    .page-controls {
+      display: flex;
+      gap: 4px;
+    }
+
+    .page-controls button {
+      padding: 3px 6px;
+      font-size: 0.65rem;
+    }
+
+    .empty-state {
+      background: var(--surface);
+      border: 1px dashed var(--border-strong);
+      padding: 32px 16px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--ink-secondary);
+      line-height: 1.6;
+    }
+
+    /* Panel de Exportación, Protección Anti-Copia y Envío */
+    .export-panel {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .field-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="text"], select {
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      color: var(--ink);
+      border-radius: var(--radius);
+      padding: 10px 10px;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    .grow {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* Bloque de protección DNI / Marca de agua inseparable */
+    .wm-shield-box {
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      border-left: 4px solid var(--accent);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .wm-toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .wm-toggle-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+    }
+
+    .wm-fields {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .wm-fields.active {
+      display: flex;
+    }
+
+    .action-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .share-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-large {
+      padding: 13px 12px;
+      font-size: 0.76rem;
+      letter-spacing: 0.06em;
+      text-align: center;
+    }
+
+    .hint-note {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      color: var(--ink-secondary);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="brand">
+        <svg class="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true">
+          <rect width="512" height="512" fill="#f5f5f3"/>
+          <rect x="116" y="88" width="280" height="336" fill="#ffffff" stroke="#111111" stroke-width="24"/>
+          <line x1="164" y1="168" x2="348" y2="168" stroke="#111111" stroke-width="20"/>
+          <line x1="164" y1="224" x2="296" y2="224" stroke="#111111" stroke-width="20"/>
+          <line x1="76" y1="284" x2="436" y2="284" stroke="#d9381e" stroke-width="28"/>
+        </svg>
+        <div class="brand-text">
+          <h1>FOLIO</h1>
+          <p id="statusSubtitle">ESCÁNER PDF LOCAL · SIN SERVIDOR</p>
+        </div>
+      </div>
+      <button class="btn" id="clearAllBtn" style="display:none;">Vaciar</button>
+    </header>
+
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden />
+    <input type="file" id="galleryInput" accept="image/*" multiple hidden />
+
+    <!-- Captura -->
+    <section class="capture-bar" id="captureBar">
+      <button type="button" class="capture-btn" id="btnCamera">
+        <span class="main">+ Cámara</span>
+        <span class="sub">Capturar documento</span>
+      </button>
+      <button type="button" class="capture-btn" id="btnGallery">
+        <span class="main">+ Archivo</span>
+        <span class="sub">Subir desde galería</span>
+      </button>
+    </section>
+
+    <!-- Editor de Perspectiva con Lupa -->
+    <section class="editor-panel" id="editorPanel">
+      <div class="editor-header">
+        <h2>Encuadre de 4 Puntos</h2>
+        <div style="display:flex; gap:4px;">
+          <button type="button" class="btn" id="dniRatioBtn" style="padding:4px 8px;font-size:0.65rem;" title="Ajustar marco a proporción estándar de DNI">Marco DNI</button>
+          <button type="button" class="btn" id="rotateBtn" style="padding:4px 8px;font-size:0.65rem;">Rotar 90°</button>
+        </div>
+      </div>
+
+      <div class="canvas-wrapper">
+        <canvas id="cropCanvas"></canvas>
+      </div>
+
+      <div class="filter-bar" role="group" aria-label="Modo de procesamiento">
+        <button type="button" class="filter-btn active" data-filter="bw">Doc B/N</button>
+        <button type="button" class="filter-btn" data-filter="gray">Grises</button>
+        <button type="button" class="filter-btn" data-filter="color">Color</button>
+      </div>
+
+      <div class="editor-actions">
+        <button type="button" class="btn" id="cancelCropBtn">Descartar</button>
+        <button type="button" class="btn btn-accent" id="confirmCropBtn">Recortar y Añadir</button>
+      </div>
+    </section>
+
+    <!-- Cola de Capturas -->
+    <section>
+      <div class="section-header">
+        <h2 id="pagesCountTitle">Páginas en cola (0)</h2>
+      </div>
+      <div id="pagesContainer">
+        <div class="empty-state">
+          NINGÚN DOCUMENTO EN COLA.<br/>
+          CAPTURA UNA O VARIAS CARAS (EJ. ANVERSO Y REVERSO DEL DNI) PARA GENERAR EL PDF.
+        </div>
+      </div>
+    </section>
+
+    <!-- Salida, Protección Anti-Edición y Envío Directo -->
+    <section class="export-panel">
+      <div class="section-header" style="margin-bottom:0;">
+        <h2>Generar y Enviar</h2>
+      </div>
+
+      <div class="field-row">
+        <input type="text" id="filenameInput" class="grow" value="documento" placeholder="Nombre archivo" aria-label="Nombre archivo" />
+        <select id="layoutSelect" aria-label="Formato de hoja">
+          <option value="one_per_page">1 por hoja A4</option>
+          <option value="dni_2in1">DNI 2 en 1 (A4)</option>
+        </select>
+      </div>
+
+      <!-- Protección Anti-Copia / Marca de agua fundida en píxeles -->
+      <div class="wm-shield-box">
+        <label class="wm-toggle-row">
+          <span>Proteger DNI / Documento (Marca anti-edición)</span>
+          <input type="checkbox" id="wmEnableCheck" />
+        </label>
+        <div class="wm-fields" id="wmFieldsBox">
+          <input type="text" id="wmTextInput" value="SOLO PARA TRÁMITE · COPIA NO VÁLIDA" placeholder="Motivo del envío (ej. Alquiler piso)..." />
+          <div class="field-row">
+            <select id="wmStyleSelect" class="grow" style="padding:7px 8px; font-size:0.68rem;">
+              <option value="tiled">Malla repetida sobre el documento (Anti-recorte)</option>
+              <option value="band">Banda diagonal central</option>
+            </select>
+            <select id="wmOpacitySelect" style="padding:7px 8px; font-size:0.68rem;">
+              <option value="0.28">Suave</option>
+              <option value="0.42" selected>Media</option>
+              <option value="0.58">Fuerte</option>
+            </select>
+          </div>
+          <p class="hint-note">
+            La marca se funde en los píxeles de la imagen: es imposible seleccionarla o borrarla en Word.
+          </p>
+        </div>
+      </div>
+
+      <div class="action-stack">
+        <button type="button" class="btn btn-ink btn-large" id="downloadPdfBtn" disabled>
+          Descargar PDF
+        </button>
+
+        <div class="share-grid">
+          <button type="button" class="btn btn-accent btn-large" id="shareWhatsappBtn" disabled>
+            Enviar WhatsApp
+          </button>
+          <button type="button" class="btn btn-large" id="shareEmailBtn" disabled>
+            Enviar Correo
+          </button>
+        </div>
+      </div>
+
+      <p class="hint-note" id="shareHint">
+        En móvil adjunta el PDF directamente al menú de WhatsApp o Mail. En ordenador descarga el archivo y abre el cliente.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+
+    // --- Estado ---
+    let pages = [];
+    let pendingFiles = [];
+    let currentImage = null;
+    let corners = [];
+    let draggingCorner = -1;
+    let selectedFilter = "bw";
+
+    // --- DOM ---
+    const cameraInput = document.getElementById("cameraInput");
+    const galleryInput = document.getElementById("galleryInput");
+    const editorPanel = document.getElementById("editorPanel");
+    const captureBar = document.getElementById("captureBar");
+    const cropCanvas = document.getElementById("cropCanvas");
+    const ctx = cropCanvas.getContext("2d");
+    const pagesContainer = document.getElementById("pagesContainer");
+    const pagesCountTitle = document.getElementById("pagesCountTitle");
+    const clearAllBtn = document.getElementById("clearAllBtn");
+    const statusSubtitle = document.getElementById("statusSubtitle");
+
+    const wmEnableCheck = document.getElementById("wmEnableCheck");
+    const wmFieldsBox = document.getElementById("wmFieldsBox");
+
+    const downloadPdfBtn = document.getElementById("downloadPdfBtn");
+    const shareWhatsappBtn = document.getElementById("shareWhatsappBtn");
+    const shareEmailBtn = document.getElementById("shareEmailBtn");
+
+    wmEnableCheck.onchange = () => {
+      wmFieldsBox.classList.toggle("active", wmEnableCheck.checked);
+    };
+
+    // --- Entrada de archivos ---
+    document.getElementById("btnCamera").onclick = () => cameraInput.click();
+    document.getElementById("btnGallery").onclick = () => galleryInput.click();
+    cameraInput.onchange = (e) => handleFiles(e.target.files);
+    galleryInput.onchange = (e) => handleFiles(e.target.files);
+
+    function handleFiles(fileList) {
+      if (!fileList || fileList.length === 0) return;
+      pendingFiles.push(...Array.from(fileList));
+      cameraInput.value = "";
+      galleryInput.value = "";
+      if (!editorPanel.classList.contains("active")) {
+        loadNextPendingFile();
+      }
+    }
+
+    function loadNextPendingFile() {
+      if (pendingFiles.length === 0) {
+        editorPanel.classList.remove("active");
+        captureBar.style.display = "grid";
+        return;
+      }
+
+      const file = pendingFiles.shift();
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          currentImage = img;
+          setupCropper(img);
+          editorPanel.classList.add("active");
+          captureBar.style.display = "none";
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // --- Visor de Recorte con Lupa de Precisión ---
+    function setupCropper(img) {
+      const maxW = Math.min(window.innerWidth - 64, 490);
+      const scale = Math.min(1, maxW / img.width);
+      cropCanvas.width = Math.round(img.width * scale);
+      cropCanvas.height = Math.round(img.height * scale);
+
+      const padX = cropCanvas.width * 0.1;
+      const padY = cropCanvas.height * 0.1;
+
+      corners = [
+        { x: padX, y: padY },
+        { x: cropCanvas.width - padX, y: padY },
+        { x: cropCanvas.width - padX, y: cropCanvas.height - padY },
+        { x: padX, y: cropCanvas.height - padY }
+      ];
+
+      drawCropper();
+    }
+
+    // Ajuste rápido a proporción estándar ISO/IEC 7810 ID-1 (DNI: 85.6 x 53.98 mm -> 1.586)
+    document.getElementById("dniRatioBtn").onclick = () => {
+      if (!currentImage) return;
+      const targetRatio = 1.586;
+      let boxW = cropCanvas.width * 0.84;
+      let boxH = boxW / targetRatio;
+      if (boxH > cropCanvas.height * 0.84) {
+        boxH = cropCanvas.height * 0.84;
+        boxW = boxH * targetRatio;
+      }
+      const startX = (cropCanvas.width - boxW) / 2;
+      const startY = (cropCanvas.height - boxH) / 2;
+
+      corners = [
+        { x: startX, y: startY },
+        { x: startX + boxW, y: startY },
+        { x: startX + boxW, y: startY + boxH },
+        { x: startX, y: startY + boxH }
+      ];
+      drawCropper();
+    };
+
+    function drawCropper() {
+      if (!currentImage) return;
+      ctx.clearRect(0, 0, cropCanvas.width, cropCanvas.height);
+      ctx.drawImage(currentImage, 0, 0, cropCanvas.width, cropCanvas.height);
+
+      ctx.save();
+      ctx.fillStyle = "rgba(17, 17, 17, 0.58)";
+      ctx.beginPath();
+      ctx.rect(0, 0, cropCanvas.width, cropCanvas.height);
+      ctx.moveTo(corners[0].x, corners[0].y);
+      for (let i = 1; i < 4; i++) ctx.lineTo(corners[i].x, corners[i].y);
+      ctx.closePath();
+      ctx.fill("evenodd");
+      ctx.restore();
+
+      ctx.strokeStyle = "#d9381e";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(corners[0].x, corners[0].y);
+      for (let i = 1; i < 4; i++) ctx.lineTo(corners[i].x, corners[i].y);
+      ctx.closePath();
+      ctx.stroke();
+
+      corners.forEach((pt, idx) => {
+        ctx.fillStyle = draggingCorner === idx ? "#ffffff" : "#d9381e";
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 11, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#111111";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      });
+
+      if (draggingCorner !== -1) {
+        const pt = corners[draggingCorner];
+        const loupeRadius = 46;
+        const zoom = 2.2;
+        const loupeX = pt.x < cropCanvas.width / 2 ? cropCanvas.width - loupeRadius - 14 : loupeRadius + 14;
+        const loupeY = loupeRadius + 14;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(loupeX, loupeY, loupeRadius, 0, Math.PI * 2);
+        ctx.clip();
+
+        ctx.fillStyle = "#111111";
+        ctx.fillRect(loupeX - loupeRadius, loupeY - loupeRadius, loupeRadius * 2, loupeRadius * 2);
+
+        const scaleX = currentImage.width / cropCanvas.width;
+        const scaleY = currentImage.height / cropCanvas.height;
+        const srcX = pt.x * scaleX;
+        const srcY = pt.y * scaleY;
+        const srcW = (loupeRadius * 2 * scaleX) / zoom;
+        const srcH = (loupeRadius * 2 * scaleY) / zoom;
+
+        ctx.drawImage(
+          currentImage,
+          srcX - srcW / 2,
+          srcY - srcH / 2,
+          srcW,
+          srcH,
+          loupeX - loupeRadius,
+          loupeY - loupeRadius,
+          loupeRadius * 2,
+          loupeRadius * 2
+        );
+
+        ctx.strokeStyle = "#d9381e";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(loupeX - 12, loupeY);
+        ctx.lineTo(loupeX + 12, loupeY);
+        ctx.moveTo(loupeX, loupeY - 12);
+        ctx.lineTo(loupeX, loupeY + 12);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(loupeX, loupeY, loupeRadius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    function getPointerPos(e) {
+      const rect = cropCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: ((clientX - rect.left) / rect.width) * cropCanvas.width,
+        y: ((clientY - rect.top) / rect.height) * cropCanvas.height
+      };
+    }
+
+    function onPointerDown(e) {
+      const pos = getPointerPos(e);
+      let minDist = 42;
+      draggingCorner = -1;
+      corners.forEach((pt, i) => {
+        const d = Math.hypot(pt.x - pos.x, pt.y - pos.y);
+        if (d < minDist) {
+          minDist = d;
+          draggingCorner = i;
+        }
+      });
+      if (draggingCorner !== -1) {
+        e.preventDefault();
+        drawCropper();
+      }
+    }
+
+    function onPointerMove(e) {
+      if (draggingCorner === -1) return;
+      e.preventDefault();
+      const pos = getPointerPos(e);
+      corners[draggingCorner] = {
+        x: Math.max(0, Math.min(cropCanvas.width, pos.x)),
+        y: Math.max(0, Math.min(cropCanvas.height, pos.y))
+      };
+      drawCropper();
+    }
+
+    function onPointerUp() {
+      if (draggingCorner !== -1) {
+        draggingCorner = -1;
+        drawCropper();
+      }
+    }
+
+    cropCanvas.addEventListener("mousedown", onPointerDown);
+    window.addEventListener("mousemove", onPointerMove);
+    window.addEventListener("mouseup", onPointerUp);
+
+    cropCanvas.addEventListener("touchstart", onPointerDown, { passive: false });
+    window.addEventListener("touchmove", onPointerMove, { passive: false });
+    window.addEventListener("touchend", onPointerUp);
+
+    document.getElementById("rotateBtn").onclick = () => {
+      if (!currentImage) return;
+      const off = document.createElement("canvas");
+      off.width = currentImage.height;
+      off.height = currentImage.width;
+      const octx = off.getContext("2d");
+      octx.translate(off.width / 2, off.height / 2);
+      octx.rotate(Math.PI / 2);
+      octx.drawImage(currentImage, -currentImage.width / 2, -currentImage.height / 2);
+
+      const rotated = new Image();
+      rotated.onload = () => {
+        currentImage = rotated;
+        setupCropper(rotated);
+      };
+      rotated.src = off.toDataURL("image/jpeg", 0.95);
+    };
+
+    document.querySelectorAll(".filter-btn").forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        selectedFilter = btn.dataset.filter;
+      };
+    });
+
+    document.getElementById("cancelCropBtn").onclick = () => {
+      loadNextPendingFile();
+    };
+
+    // --- Homografía y Procesamiento con Umbralización Adaptativa ---
+    document.getElementById("confirmCropBtn").onclick = () => {
+      if (!currentImage) return;
+      statusSubtitle.textContent = "PROCESANDO ENCUADRE...";
+
+      setTimeout(() => {
+        const scaleX = currentImage.width / cropCanvas.width;
+        const scaleY = currentImage.height / cropCanvas.height;
+
+        const srcPts = corners.map((p) => ({
+          x: p.x * scaleX,
+          y: p.y * scaleY
+        }));
+
+        const topW = Math.hypot(srcPts[1].x - srcPts[0].x, srcPts[1].y - srcPts[0].y);
+        const botW = Math.hypot(srcPts[2].x - srcPts[3].x, srcPts[2].y - srcPts[3].y);
+        const leftH = Math.hypot(srcPts[3].x - srcPts[0].x, srcPts[3].y - srcPts[0].y);
+        const rightH = Math.hypot(srcPts[2].x - srcPts[1].x, srcPts[2].y - srcPts[1].y);
+
+        let dstW = Math.round(Math.max(topW, botW));
+        let dstH = Math.round(Math.max(leftH, rightH));
+
+        const maxDim = 1500;
+        if (Math.max(dstW, dstH) > maxDim) {
+          const ratio = maxDim / Math.max(dstW, dstH);
+          dstW = Math.round(dstW * ratio);
+          dstH = Math.round(dstH * ratio);
+        }
+
+        const warpedDataUrl = warpAndFilter(currentImage, srcPts, dstW, dstH, selectedFilter);
+        pages.push({
+          id: String(Date.now() + Math.random()),
+          dataUrl: warpedDataUrl,
+          width: dstW,
+          height: dstH
+        });
+
+        // Sugerencia automática DNI 2 en 1 y activación de protección si se añaden 2 capturas apaisadas
+        if (pages.length === 2 && pages[0].width > pages[0].height && pages[1].width > pages[1].height) {
+          document.getElementById("layoutSelect").value = "dni_2in1";
+          document.getElementById("filenameInput").value = "dni_completo";
+          wmEnableCheck.checked = true;
+          wmFieldsBox.classList.add("active");
+        }
+
+        statusSubtitle.textContent = "ESCÁNER PDF LOCAL · SIN SERVIDOR";
+        renderPages();
+        loadNextPendingFile();
+      }, 20);
+    };
+
+    function warpAndFilter(img, srcPts, dstW, dstH, filterMode) {
+      const srcCanvas = document.createElement("canvas");
+      srcCanvas.width = img.width;
+      srcCanvas.height = img.height;
+      const sctx = srcCanvas.getContext("2d");
+      sctx.drawImage(img, 0, 0);
+      const srcData = sctx.getImageData(0, 0, img.width, img.height);
+
+      const dstCanvas = document.createElement("canvas");
+      dstCanvas.width = dstW;
+      dstCanvas.height = dstH;
+      const dctx = dstCanvas.getContext("2d");
+      const dstData = dctx.createImageData(dstW, dstH);
+
+      const dstPts = [
+        { x: 0, y: 0 },
+        { x: dstW, y: 0 },
+        { x: dstW, y: dstH },
+        { x: 0, y: dstH }
+      ];
+      const H = computeHomography(dstPts, srcPts);
+
+      const sBuf = srcData.data;
+      const dBuf = dstData.data;
+      const sw = img.width;
+      const sh = img.height;
+
+      // Primero muestrear la imagen deformada
+      const lumBuffer = filterMode === "bw" ? new Uint8Array(dstW * dstH) : null;
+
+      for (let y = 0; y < dstH; y++) {
+        for (let x = 0; x < dstW; x++) {
+          const denom = H[6] * x + H[7] * y + 1;
+          const sx = Math.round((H[0] * x + H[1] * y + H[2]) / denom);
+          const sy = Math.round((H[3] * x + H[4] * y + H[5]) / denom);
+
+          const pIdx = y * dstW + x;
+          const dIdx = pIdx * 4;
+          if (sx >= 0 && sx < sw && sy >= 0 && sy < sh) {
+            const sIdx = (sy * sw + sx) * 4;
+            let r = sBuf[sIdx];
+            let g = sBuf[sIdx + 1];
+            let b = sBuf[sIdx + 2];
+
+            if (filterMode === "gray") {
+              const lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+              r = g = b = lum;
+            } else if (filterMode === "bw") {
+              const lum = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+              lumBuffer[pIdx] = lum;
+            }
+
+            dBuf[dIdx] = r;
+            dBuf[dIdx + 1] = g;
+            dBuf[dIdx + 2] = b;
+            dBuf[dIdx + 3] = 255;
+          } else {
+            if (lumBuffer) lumBuffer[pIdx] = 255;
+            dBuf[dIdx] = dBuf[dIdx + 1] = dBuf[dIdx + 2] = 255;
+            dBuf[dIdx + 3] = 255;
+          }
+        }
+      }
+
+      // Umbralización adaptativa local (elimina sombras de mano o flexo en Doc B/N)
+      if (filterMode === "bw" && lumBuffer) {
+        const integral = new Float64Array((dstW + 1) * (dstH + 1));
+        for (let y = 0; y < dstH; y++) {
+          let rowSum = 0;
+          for (let x = 0; x < dstW; x++) {
+            rowSum += lumBuffer[y * dstW + x];
+            integral[(y + 1) * (dstW + 1) + (x + 1)] = integral[y * (dstW + 1) + (x + 1)] + rowSum;
+          }
+        }
+
+        const radius = Math.max(12, Math.round(Math.min(dstW, dstH) / 28));
+        for (let y = 0; y < dstH; y++) {
+          const y1 = Math.max(0, y - radius);
+          const y2 = Math.min(dstH - 1, y + radius);
+          for (let x = 0; x < dstW; x++) {
+            const x1 = Math.max(0, x - radius);
+            const x2 = Math.min(dstW - 1, x + radius);
+            const count = (x2 - x1 + 1) * (y2 - y1 + 1);
+            const sum =
+              integral[(y2 + 1) * (dstW + 1) + (x2 + 1)] -
+              integral[y1 * (dstW + 1) + (x2 + 1)] -
+              integral[(y2 + 1) * (dstW + 1) + x1] +
+              integral[y1 * (dstW + 1) + x1];
+            const localMean = sum / count;
+            const curLum = lumBuffer[y * dstW + x];
+
+            // Si el píxel es significativamente más oscuro que su entorno local, es tinta; si no, blanco limpio
+            const val = curLum < localMean * 0.86 ? Math.max(0, Math.round(curLum * 0.55)) : 255;
+            const dIdx = (y * dstW + x) * 4;
+            dBuf[dIdx] = dBuf[dIdx + 1] = dBuf[dIdx + 2] = val;
+          }
+        }
+      }
+
+      dctx.putImageData(dstData, 0, 0);
+      return dstCanvas.toDataURL("image/jpeg", 0.88);
+    }
+
+    function computeHomography(src, dst) {
+      const A = [];
+      const B = [];
+      for (let i = 0; i < 4; i++) {
+        const xs = src[i].x, ys = src[i].y;
+        const xd = dst[i].x, yd = dst[i].y;
+        A.push([xs, ys, 1, 0, 0, 0, -xs * xd, -ys * xd]);
+        B.push(xd);
+        A.push([0, 0, 0, xs, ys, 1, -xs * yd, -ys * yd]);
+        B.push(yd);
+      }
+      return solveGaussian(A, B);
+    }
+
+    function solveGaussian(A, B) {
+      const n = B.length;
+      for (let i = 0; i < n; i++) {
+        let maxRow = i;
+        for (let k = i + 1; k < n; k++) {
+          if (Math.abs(A[k][i]) > Math.abs(A[maxRow][i])) maxRow = k;
+        }
+        [A[i], A[maxRow]] = [A[maxRow], A[i]];
+        [B[i], B[maxRow]] = [B[maxRow], B[i]];
+
+        for (let k = i + 1; k < n; k++) {
+          const factor = A[k][i] / A[i][i];
+          B[k] -= factor * B[i];
+          for (let j = i; j < n; j++) {
+            A[k][j] -= factor * A[i][j];
+          }
+        }
+      }
+      const x = new Array(n).fill(0);
+      for (let i = n - 1; i >= 0; i--) {
+        let sum = 0;
+        for (let j = i + 1; j < n; j++) sum += A[i][j] * x[j];
+        x[i] = (B[i] - sum) / A[i][i];
+      }
+      return x;
+    }
+
+    // --- Render Cola ---
+    function renderPages() {
+      const hasPages = pages.length > 0;
+      pagesCountTitle.textContent = `Páginas en cola (${pages.length})`;
+      downloadPdfBtn.disabled = !hasPages;
+      shareWhatsappBtn.disabled = !hasPages;
+      shareEmailBtn.disabled = !hasPages;
+      clearAllBtn.style.display = hasPages ? "inline-block" : "none";
+
+      if (!hasPages) {
+        pagesContainer.innerHTML = `
+          <div class="empty-state">
+            NINGÚN DOCUMENTO EN COLA.<br/>
+            CAPTURA UNA O VARIAS CARAS (EJ. ANVERSO Y REVERSO DEL DNI) PARA GENERAR EL PDF.
+          </div>
+        `;
+        return;
+      }
+
+      const grid = document.createElement("div");
+      grid.className = "pages-grid";
+
+      pages.forEach((p, idx) => {
+        const card = document.createElement("div");
+        card.className = "page-card";
+        card.innerHTML = `
+          <div class="page-thumb-box">
+            <img src="${p.dataUrl}" alt="Página ${idx + 1}" />
+          </div>
+          <div class="page-meta">
+            <span>0${idx + 1}</span>
+            <div class="page-controls">
+              <button type="button" class="btn" data-act="left" ${idx === 0 ? "disabled" : ""}>←</button>
+              <button type="button" class="btn" data-act="right" ${idx === pages.length - 1 ? "disabled" : ""}>→</button>
+              <button type="button" class="btn" data-act="del">X</button>
+            </div>
+          </div>
+        `;
+
+        card.querySelector('[data-act="left"]').onclick = () => {
+          [pages[idx - 1], pages[idx]] = [pages[idx], pages[idx - 1]];
+          renderPages();
+        };
+        card.querySelector('[data-act="right"]').onclick = () => {
+          [pages[idx + 1], pages[idx]] = [pages[idx], pages[idx + 1]];
+          renderPages();
+        };
+        card.querySelector('[data-act="del"]').onclick = () => {
+          pages.splice(idx, 1);
+          renderPages();
+        };
+
+        grid.appendChild(card);
+      });
+
+      pagesContainer.innerHTML = "";
+      pagesContainer.appendChild(grid);
+    }
+
+    clearAllBtn.onclick = () => {
+      pages = [];
+      renderPages();
+    };
+
+    // --- Estampar Marca de Agua Anti-Edición directamente en los píxeles del documento ---
+    function burnWatermarkIntoSlot(ctx, boxX, boxY, boxW, boxH) {
+      if (!wmEnableCheck.checked) return;
+      const text = document.getElementById("wmTextInput").value.trim();
+      if (!text) return;
+
+      const style = document.getElementById("wmStyleSelect").value;
+      const opacity = parseFloat(document.getElementById("wmOpacitySelect").value) || 0.42;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(boxX, boxY, boxW, boxH);
+      ctx.clip();
+
+      ctx.fillStyle = `rgba(217, 56, 30, ${opacity})`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      const cx = boxX + boxW / 2;
+      const cy = boxY + boxH / 2;
+      ctx.translate(cx, cy);
+      ctx.rotate((-28 * Math.PI) / 180);
+
+      if (style === "tiled") {
+        const fontSize = Math.max(18, Math.round(boxW / 22));
+        ctx.font = `800 ${fontSize}px monospace`;
+        const textW = ctx.measureText(text).width;
+        const stepX = Math.max(220, textW + 70);
+        const stepY = fontSize * 3.8;
+        const diag = Math.hypot(boxW, boxH);
+
+        for (let y = -diag; y <= diag; y += stepY) {
+          for (let x = -diag; x <= diag; x += stepX) {
+            ctx.fillText(text, x, y);
+          }
+        }
+      } else {
+        const fontSize = Math.max(24, Math.min(64, Math.round(boxW / (text.length * 0.62))));
+        ctx.font = `900 ${fontSize}px sans-serif`;
+        ctx.fillText(text, 0, 0);
+      }
+
+      ctx.restore();
+    }
+
+    // --- Generación del Archivo PDF (100 % rasterizado / aplanado) ---
+    async function generatePdfFile() {
+      const layout = document.getElementById("layoutSelect").value;
+      const rawName = document.getElementById("filenameInput").value.trim() || "documento";
+      const fileName = rawName.endsWith(".pdf") ? rawName : `${rawName}.pdf`;
+
+      const A4_W = 1240;
+      const A4_H = 1754;
+      const MARGIN = 70;
+      const composedSheets = [];
+
+      if (layout === "dni_2in1") {
+        for (let i = 0; i < pages.length; i += 2) {
+          const sheetCanvas = document.createElement("canvas");
+          sheetCanvas.width = A4_W;
+          sheetCanvas.height = A4_H;
+          const sctx = sheetCanvas.getContext("2d");
+          sctx.fillStyle = "#ffffff";
+          sctx.fillRect(0, 0, A4_W, A4_H);
+
+          const slotH = (A4_H - MARGIN * 3) / 2;
+          const slotW = A4_W - MARGIN * 2;
+
+          const rect1 = await drawImageFit(sctx, pages[i].dataUrl, MARGIN, MARGIN, slotW, slotH);
+          burnWatermarkIntoSlot(sctx, rect1.x, rect1.y, rect1.w, rect1.h);
+
+          if (pages[i + 1]) {
+            const rect2 = await drawImageFit(sctx, pages[i + 1].dataUrl, MARGIN, MARGIN * 2 + slotH, slotW, slotH);
+            burnWatermarkIntoSlot(sctx, rect2.x, rect2.y, rect2.w, rect2.h);
+          }
+          composedSheets.push(sheetCanvas.toDataURL("image/jpeg", 0.88));
+        }
+      } else {
+        for (let i = 0; i < pages.length; i++) {
+          const sheetCanvas = document.createElement("canvas");
+          sheetCanvas.width = A4_W;
+          sheetCanvas.height = A4_H;
+          const sctx = sheetCanvas.getContext("2d");
+          sctx.fillStyle = "#ffffff";
+          sctx.fillRect(0, 0, A4_W, A4_H);
+
+          const rect = await drawImageFit(sctx, pages[i].dataUrl, MARGIN, MARGIN, A4_W - MARGIN * 2, A4_H - MARGIN * 2);
+          burnWatermarkIntoSlot(sctx, rect.x, rect.y, rect.w, rect.h);
+          composedSheets.push(sheetCanvas.toDataURL("image/jpeg", 0.88));
+        }
+      }
+
+      const blob = buildPdfFromJpegs(composedSheets, A4_W, A4_H);
+      const file = new File([blob], fileName, { type: "application/pdf" });
+      return { blob, file, fileName };
+    }
+
+    function triggerDownload(blob, fileName) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    function setExportLoading(isLoading) {
+      downloadPdfBtn.disabled = isLoading;
+      shareWhatsappBtn.disabled = isLoading;
+      shareEmailBtn.disabled = isLoading;
+      statusSubtitle.textContent = isLoading ? "GENERANDO PDF..." : "ESCÁNER PDF LOCAL · SIN SERVIDOR";
+    }
+
+    downloadPdfBtn.onclick = async () => {
+      if (pages.length === 0) return;
+      setExportLoading(true);
+      const { blob, fileName } = await generatePdfFile();
+      triggerDownload(blob, fileName);
+      setExportLoading(false);
+    };
+
+    shareWhatsappBtn.onclick = async () => {
+      if (pages.length === 0) return;
+      setExportLoading(true);
+      const { blob, file, fileName } = await generatePdfFile();
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: fileName
+          });
+        } catch (err) {}
+      } else {
+        triggerDownload(blob, fileName);
+        const text = encodeURIComponent(`Adjunto documento: ${fileName}`);
+        window.open(`https://wa.me/?text=${text}`, "_blank", "noopener");
+      }
+      setExportLoading(false);
+    };
+
+    shareEmailBtn.onclick = async () => {
+      if (pages.length === 0) return;
+      setExportLoading(true);
+      const { blob, file, fileName } = await generatePdfFile();
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: fileName,
+            text: `Adjunto el documento ${fileName}.`
+          });
+        } catch (err) {}
+      } else {
+        triggerDownload(blob, fileName);
+        const subject = encodeURIComponent(`Documento: ${fileName}`);
+        const body = encodeURIComponent(`Hola,\n\nAdjunto el documento "${fileName}".\n`);
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+      }
+      setExportLoading(false);
+    };
+
+    function drawImageFit(ctx, dataUrl, boxX, boxY, boxW, boxH) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(boxW / img.width, boxH / img.height);
+          const w = img.width * scale;
+          const h = img.height * scale;
+          const x = boxX + (boxW - w) / 2;
+          const y = boxY + (boxH - h) / 2;
+          ctx.drawImage(img, x, y, w, h);
+          resolve({ x, y, w, h });
+        };
+        img.src = dataUrl;
+      });
+    }
+
+    function buildPdfFromJpegs(jpegDataUrls, pxW, pxH) {
+      const ptW = 595.28;
+      const ptH = 841.89;
+
+      const encoder = new TextEncoder();
+      const chunks = [];
+      const offsets = [0];
+      let byteLength = 0;
+
+      function writeStr(str) {
+        const bytes = encoder.encode(str);
+        chunks.push(bytes);
+        byteLength += bytes.length;
+      }
+
+      function writeBytes(uint8) {
+        chunks.push(uint8);
+        byteLength += uint8.length;
+      }
+
+      writeStr("%PDF-1.4\n");
+
+      const pageCount = jpegDataUrls.length;
+      const pageObjIds = [];
+
+      offsets[1] = byteLength;
+      writeStr("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+
+      let nextId = 3;
+      const pageEntries = jpegDataUrls.map((dataUrl) => {
+        const pageId = nextId++;
+        const contentId = nextId++;
+        const imgId = nextId++;
+        pageObjIds.push(pageId);
+        return { pageId, contentId, imgId, dataUrl };
+      });
+
+      offsets[2] = byteLength;
+      writeStr(`2 0 obj\n<< /Type /Pages /Kids [${pageObjIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageCount} >>\nendobj\n`);
+
+      for (const entry of pageEntries) {
+        const base64 = entry.dataUrl.split(",")[1];
+        const binStr = atob(base64);
+        const imgBytes = new Uint8Array(binStr.length);
+        for (let i = 0; i < binStr.length; i++) imgBytes[i] = binStr.charCodeAt(i);
+
+        offsets[entry.pageId] = byteLength;
+        writeStr(
+          `${entry.pageId} 0 obj\n` +
+          `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${ptW} ${ptH}] ` +
+          `/Resources << /XObject << /Im0 ${entry.imgId} 0 R >> >> ` +
+          `/Contents ${entry.contentId} 0 R >>\nendobj\n`
+        );
+
+        const streamCmd = `q ${ptW} 0 0 ${ptH} 0 0 cm /Im0 Do Q\n`;
+        offsets[entry.contentId] = byteLength;
+        writeStr(
+          `${entry.contentId} 0 obj\n<< /Length ${streamCmd.length} >>\nstream\n${streamCmd}endstream\nendobj\n`
+        );
+
+        offsets[entry.imgId] = byteLength;
+        writeStr(
+          `${entry.imgId} 0 obj\n` +
+          `<< /Type /XObject /Subtype /Image /Width ${pxW} /Height ${pxH} ` +
+          `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imgBytes.length} >>\n` +
+          `stream\n`
+        );
+        writeBytes(imgBytes);
+        writeStr("\nendstream\nendobj\n");
+      }
+
+      const xrefStart = byteLength;
+      writeStr(`xref\n0 ${nextId}\n`);
+      writeStr("0000000000 65535 f \n");
+      for (let i = 1; i < nextId; i++) {
+        writeStr(`${String(offsets[i]).padStart(10, "0")} 00000 n \n`);
+      }
+
+      writeStr(
+        `trailer\n<< /Size ${nextId} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`
+      );
+
+      return new Blob(chunks, { type: "application/pdf" });
+    }
+  </script>
+</body>
+</html>

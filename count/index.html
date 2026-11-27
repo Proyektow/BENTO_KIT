@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f5f5f3" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <title>BentoCount · Control de Gastos, Metas y Evolución</title>
+
+  <style>
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --ink: #111111;
+      --muted: #5e5e5a;
+      --border: #dcdcd6;
+      --accent: #d9381e;
+      --accent-hover: #b82d16;
+      --warn: #d97706;
+      --ok: #1b7a3d;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      padding: 20px 14px 56px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .brand h1 {
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .brand h1 span { color: var(--accent); }
+
+    .brand p {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-local {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 700;
+      padding: 5px 9px;
+      border: 1px solid var(--ok);
+      color: var(--ok);
+      background: var(--surface);
+      text-transform: uppercase;
+    }
+
+    input[type="month"] {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 5px 8px;
+      border: 1px solid var(--ink);
+      background: var(--surface);
+      color: var(--ink);
+      outline: none;
+    }
+
+    /* KPIs principales */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .kpi-card.highlight {
+      background: var(--ink);
+      color: var(--surface);
+      border-bottom: 4px solid var(--accent);
+    }
+
+    .kpi-label {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .kpi-card.highlight .kpi-label { color: #b8b8b2; }
+
+    .kpi-value {
+      font-family: var(--mono);
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .kpi-sub {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--muted);
+    }
+
+    .kpi-card.highlight .kpi-sub { color: #dcdcd6; }
+
+    .val-ok { color: var(--ok); }
+    .val-bad { color: var(--accent); }
+
+    /* Monitor de Tope de Gasto Mensual */
+    .cap-box {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .cap-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .cap-input-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cap-bar-wrap {
+      width: 100%;
+      height: 22px;
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cap-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--ok);
+      transition: width 0.25s, background-color 0.25s;
+    }
+
+    .cap-bar-fill.warn { background: var(--warn); }
+    .cap-bar-fill.over { background: var(--accent); }
+
+    .cap-bar-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: var(--ink);
+      pointer-events: none;
+    }
+
+    .cap-status-msg {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    /* Pestañas (4 secciones) */
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .tab-btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      padding: 10px 6px;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .tab-btn.active {
+      background: var(--ink);
+      color: var(--surface);
+      border-bottom: 3px solid var(--accent);
+    }
+
+    .panel { display: none; flex-direction: column; gap: 14px; }
+    .panel.active { display: flex; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .section-tag {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: var(--accent);
+      text-transform: uppercase;
+    }
+
+    .desc-text {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    /* Formulario rápido */
+    .type-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .type-opt {
+      border: 1px solid var(--ink);
+      background: var(--bg);
+      padding: 9px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .type-opt.active-expense {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .type-opt.active-income {
+      background: var(--ok);
+      border-color: var(--ok);
+      color: #ffffff;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1.3fr 1.6fr auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    label {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 9px 10px;
+      font-family: var(--mono);
+      font-size: 0.76rem;
+      color: var(--ink);
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+
+    .btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      padding: 9px 12px;
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:hover:not(:disabled) { background: var(--ink); color: var(--surface); }
+
+    .btn-accent {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-accent:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .btn-ok {
+      border-color: var(--ok);
+      color: var(--ok);
+    }
+
+    .btn-ok:hover:not(:disabled) {
+      background: var(--ok);
+      color: #ffffff;
+    }
+
+    .quick-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .chip-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 4px 8px;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chip-btn:hover {
+      border-color: var(--ink);
+      background: var(--surface);
+    }
+
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    /* Lista de movimientos */
+    .tx-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tx-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--ink);
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tx-item.expense { border-left-color: var(--accent); }
+    .tx-item.income { border-left-color: var(--ok); }
+
+    .tx-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .tx-meta {
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .tag-pill {
+      display: inline-block;
+      background: var(--ink);
+      color: var(--surface);
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      padding: 1px 5px;
+      margin-left: 4px;
+    }
+
+    .tx-amount {
+      font-family: var(--mono);
+      font-size: 0.94rem;
+      font-weight: 800;
+    }
+
+    /* Barras Regla 50/30/20 y Huchas */
+    .rule-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 6px 0;
+    }
+
+    .rule-head {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 800;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .bar-bg {
+      width: 100%;
+      height: 18px;
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      position: relative;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: var(--ink);
+      transition: width 0.25s;
+    }
+
+    .bar-fill.over { background: var(--accent); }
+    .bar-fill.warn { background: var(--warn); }
+    .bar-fill.good { background: var(--ok); }
+
+    .chart-wrap {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 12px;
+    }
+
+    canvas {
+      width: 100%;
+      display: block;
+    }
+
+    /* Huchas de ahorro */
+    .goal-card {
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--ink);
+      color: var(--surface);
+      border-left: 4px solid var(--accent);
+      padding: 10px 16px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      z-index: 50;
+      display: none;
+    }
+
+    .toast.show { display: block; }
+
+    @media (max-width: 680px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .tabs { grid-template-columns: repeat(2, 1fr); }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1><span>BENTO</span> COUNT</h1>
+        <p>Presupuesto · Metas · Evolución Anual · 100 % Offline</p>
+      </div>
+      <div class="header-controls">
+        <input type="month" id="monthPicker" />
+        <div class="badge-local">● Offline</div>
+      </div>
+    </header>
+
+    <!-- KPIS DEL MES -->
+    <section class="kpi-grid">
+      <div class="kpi-card highlight">
+        <span class="kpi-label">Balance Real Mes</span>
+        <span class="kpi-value" id="kpiBalance">0,00 €</span>
+        <span class="kpi-sub" id="kpiDaily">Disponible: 0,00 €/día</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Ingresos</span>
+        <span class="kpi-value val-ok" id="kpiIncome">+0,00 €</span>
+        <span class="kpi-sub" id="kpiIncomeCount">0 entradas</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Gastos Totales</span>
+        <span class="kpi-value val-bad" id="kpiExpense">-0,00 €</span>
+        <span class="kpi-sub" id="kpiExpenseCount">0 movimientos</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Tasa de Ahorro</span>
+        <span class="kpi-value" id="kpiSavingsRate">0 %</span>
+        <span class="kpi-sub" id="kpiTopCat">Mayor gasto: —</span>
+      </div>
+    </section>
+
+    <!-- MONITOR DE TOPE DE GASTO MENSUAL -->
+    <section class="cap-box">
+      <div class="cap-header">
+        <span class="section-tag">Tope máximo de gasto mensual (Límite objetivo)</span>
+        <div class="cap-input-group">
+          <input type="number" id="spendingCapInput" step="10" min="0" placeholder="Ej: 650" style="width:110px; padding:6px 8px;" />
+          <button type="button" class="btn btn-accent" id="btnSaveCap" style="padding:6px 10px; font-size:0.64rem;">Fijar Tope</button>
+          <button type="button" class="btn" id="btnClearCap" style="padding:6px 8px; font-size:0.64rem;" title="Quitar límite">✕</button>
+        </div>
+      </div>
+
+      <div id="capMonitorBody" style="display:none; flex-direction:column; gap:7px;">
+        <div class="cap-bar-wrap">
+          <div class="cap-bar-fill" id="capBarFill"></div>
+          <div class="cap-bar-text">
+            <span id="capSpentText">Gastado: 0,00 €</span>
+            <span id="capPctText">0 % del tope</span>
+          </div>
+        </div>
+        <div class="cap-status-msg" id="capStatusMsg"></div>
+      </div>
+
+      <div class="desc-text" id="capEmptyHint">
+        Define una cantidad máxima de gasto al mes (ej. 600 €) para ver cuánto margen te queda en cada compra y recibir avisos si te acercas al límite.
+      </div>
+    </section>
+
+    <!-- NAVEGACIÓN (4 PESTAÑAS) -->
+    <nav class="tabs">
+      <button type="button" class="tab-btn active" data-tab="tab-movs">01 · Movimientos</button>
+      <button type="button" class="tab-btn" data-tab="tab-stats">02 · Radiografía</button>
+      <button type="button" class="tab-btn" data-tab="tab-goals">03 · Huchas y Límites</button>
+      <button type="button" class="tab-btn" data-tab="tab-fixed">04 · Fijos y Respaldo</button>
+    </nav>
+
+    <!-- ===================================================================== -->
+    <!-- 01 · REGISTRO RÁPIDO Y BUSCADOR POR ETIQUETAS (#)                     -->
+    <!-- ===================================================================== -->
+    <section class="panel active" id="tab-movs">
+      <div class="card">
+        <span class="section-tag">Nuevo apunte rápido (Soporta #etiquetas en concepto)</span>
+        <div class="type-switch">
+          <button type="button" class="type-opt active-expense" id="btnTypeExpense">− Gasto</button>
+          <button type="button" class="type-opt" id="btnTypeIncome">+ Ingreso</button>
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label>Importe (€)</label>
+            <input type="number" id="txAmount" step="0.01" min="0.01" placeholder="12.50" />
+          </div>
+          <div class="field">
+            <label>Categoría</label>
+            <select id="txCategory"></select>
+          </div>
+          <div class="field">
+            <label>Concepto / #Etiqueta</label>
+            <input type="text" id="txNote" placeholder="Ej: Compra súper #casa, Gasolina #coche..." />
+          </div>
+          <button type="button" class="btn btn-accent" id="btnAddTx">Guardar</button>
+        </div>
+
+        <div class="quick-chips">
+          <span class="desc-text">Sumar rápido:</span>
+          <button type="button" class="chip-btn" data-add-amt="2">+2 €</button>
+          <button type="button" class="chip-btn" data-add-amt="5">+5 €</button>
+          <button type="button" class="chip-btn" data-add-amt="10">+10 €</button>
+          <button type="button" class="chip-btn" data-add-amt="20">+20 €</button>
+          <button type="button" class="chip-btn" data-add-amt="50">+50 €</button>
+        </div>
+      </div>
+
+      <!-- Buscador y filtros -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span class="section-tag">Historial y Buscador por #Etiquetas</span>
+          <div class="row">
+            <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer; font-size:0.62rem;">
+              <input type="checkbox" id="searchAllMonths" /> Buscar en todo el historial
+            </label>
+          </div>
+        </div>
+
+        <div class="row">
+          <input type="text" id="searchTxInput" style="flex:2; min-width:170px;" placeholder="Filtrar por texto o #etiqueta (ej: #coche, mercadona)..." />
+          <select id="filterCat" style="flex:1; min-width:150px;">
+            <option value="ALL">Todas las categorías</option>
+          </select>
+        </div>
+
+        <div id="searchSummaryBar" class="desc-text" style="display:none; font-weight:700; color:var(--ink);"></div>
+        <div class="tx-list" id="txList"></div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 02 · RADIOGRAFÍA 50/30/20, CATEGORÍAS Y EVOLUCIÓN ANUAL               -->
+    <!-- ===================================================================== -->
+    <section class="panel" id="tab-stats">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span class="section-tag">Evolución Mensual (Ingresos vs. Gastos)</span>
+          <select id="trendMonthsSelect" style="width:auto; padding:5px 8px; font-size:0.64rem;">
+            <option value="6">Últimos 6 meses</option>
+            <option value="12">Últimos 12 meses</option>
+          </select>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="section-tag">Distribución recomendada (Regla 50 / 30 / 20 sobre ingresos)</span>
+        <div class="rule-row">
+          <div class="rule-head">
+            <span>Necesidades básicas (Meta ≤ 50 %)</span>
+            <span id="ruleNeedsLabel">0 € / 0 € (0 %)</span>
+          </div>
+          <div class="bar-bg"><div class="bar-fill" id="barNeeds" style="width:0%"></div></div>
+        </div>
+
+        <div class="rule-row">
+          <div class="rule-head">
+            <span>Caprichos, Ocio y Suscripciones (Meta ≤ 30 %)</span>
+            <span id="ruleWantsLabel">0 € / 0 € (0 %)</span>
+          </div>
+          <div class="bar-bg"><div class="bar-fill" id="barWants" style="width:0%"></div></div>
+        </div>
+
+        <div class="rule-row">
+          <div class="rule-head">
+            <span>Ahorro / Colchón neto del mes (Meta ≥ 20 %)</span>
+            <span id="ruleSaveLabel">0 € / 0 € (0 %)</span>
+          </div>
+          <div class="bar-bg"><div class="bar-fill good" id="barSave" style="width:0%"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="section-tag">Radiografía de Gastos (Desglose completo por categoría)</span>
+        <div class="chart-wrap">
+          <canvas id="catChart"></canvas>
+        </div>
+        <div class="tx-list" id="catBreakdown"></div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 03 · HUCHAS / METAS DE AHORRO Y TOPES POR CATEGORÍA                   -->
+    <!-- ===================================================================== -->
+    <section class="panel" id="tab-goals">
+      <!-- Huchas de ahorro -->
+      <div class="card">
+        <span class="section-tag">Huchas y Metas de Ahorro</span>
+        <p class="desc-text">
+          Crea objetivos concretos (Viaje, Fondo de emergencia, Ordenador) y ve apartando dinero poco a poco para ver cuánto te falta.
+        </p>
+
+        <div class="form-grid" style="grid-template-columns: 1.6fr 1fr auto;">
+          <div class="field">
+            <label>Nombre de la Hucha</label>
+            <input type="text" id="goalName" placeholder="Ej: Viaje verano, Colchón..." />
+          </div>
+          <div class="field">
+            <label>Objetivo (€)</label>
+            <input type="number" id="goalTarget" step="10" min="1" placeholder="800" />
+          </div>
+          <button type="button" class="btn btn-accent" id="btnAddGoal">Crear Hucha</button>
+        </div>
+
+        <div class="tx-list" id="goalsList"></div>
+      </div>
+
+      <!-- Topes individuales por categoría -->
+      <div class="card">
+        <span class="section-tag">Topes Individuales por Categoría (Alertas de partida)</span>
+        <p class="desc-text">
+          Pon un límite mensual a categorías donde es fácil pasarse (ej. máximo 120 € en Ocio o 250 € en Súper).
+        </p>
+
+        <div class="form-grid" style="grid-template-columns: 1.6fr 1fr auto;">
+          <div class="field">
+            <label>Categoría de gasto</label>
+            <select id="catLimitSelect"></select>
+          </div>
+          <div class="field">
+            <label>Límite Mensual (€)</label>
+            <input type="number" id="catLimitAmount" step="5" min="1" placeholder="120" />
+          </div>
+          <button type="button" class="btn btn-accent" id="btnSaveCatLimit">Fijar Límite</button>
+        </div>
+
+        <div class="tx-list" id="catLimitsList"></div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 04 · GASTOS FIJOS RECURRENTES Y EXPORTACIÓN CSV/JSON                  -->
+    <!-- ===================================================================== -->
+    <section class="panel" id="tab-fixed">
+      <div class="card">
+        <span class="section-tag">Plantilla de Gastos / Ingresos Fijos Mensuales</span>
+        <p class="desc-text">
+          Guarda aquí tus movimientos recurrentes (Alquiler, Gimnasio, Teléfono, Nómina base) y aplícalos a cualquier mes en un solo toque.
+        </p>
+        <div class="form-grid">
+          <div class="field">
+            <label>Tipo e Importe (€)</label>
+            <div style="display:flex; gap:4px;">
+              <select id="recType" style="width:74px;">
+                <option value="expense">− €</option>
+                <option value="income">+ €</option>
+              </select>
+              <input type="number" id="recAmount" step="0.01" min="0.01" placeholder="50.00" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Categoría</label>
+            <select id="recCategory"></select>
+          </div>
+          <div class="field">
+            <label>Concepto fijo</label>
+            <input type="text" id="recNote" placeholder="Ej: Gimnasio, Fibra, Alquiler..." />
+          </div>
+          <button type="button" class="btn" id="btnAddRec">Añadir Fijo</button>
+        </div>
+
+        <div class="tx-list" id="recList"></div>
+
+        <div class="row">
+          <button type="button" class="btn btn-accent" id="btnApplyRec">
+            Aplicar todos los fijos al mes actual
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="section-tag">Exportar y Copia de Seguridad Local</span>
+        <p class="desc-text">
+          Tus datos nunca salen de este navegador. Puedes descargar el mes en Excel/CSV o guardar un respaldo completo JSON.
+        </p>
+        <div class="row">
+          <button type="button" class="btn btn-accent" id="btnExportCsv">Exportar Mes a CSV (Excel)</button>
+          <button type="button" class="btn" id="btnBackupJson">Descargar Respaldo JSON</button>
+          <label class="btn" style="cursor:pointer;">
+            Restaurar JSON
+            <input type="file" id="importJsonFile" accept="application/json" hidden />
+          </label>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const CATEGORIES = {
+      expense: [
+        { id: "comida", label: "Comida y Súper", bucket: "needs" },
+        { id: "vivienda", label: "Vivienda y Facturas", bucket: "needs" },
+        { id: "transporte", label: "Transporte / Gasolina", bucket: "needs" },
+        { id: "salud", label: "Salud y Deporte", bucket: "needs" },
+        { id: "ocio", label: "Ocio, Bares y Salidas", bucket: "wants" },
+        { id: "compras", label: "Compras y Caprichos", bucket: "wants" },
+        { id: "suscripciones", label: "Suscripciones / Apps", bucket: "wants" },
+        { id: "otros_g", label: "Otros Gastos", bucket: "wants" }
+      ],
+      income: [
+        { id: "nomina", label: "Nómina / Trabajo", bucket: "income" },
+        { id: "extra", label: "Ingreso Extra / Venta", bucket: "income" },
+        { id: "regalo", label: "Bizum / Devolución", bucket: "income" }
+      ]
+    };
+
+    const ALL_CAT_MAP = {};
+    [...CATEGORIES.expense, ...CATEGORIES.income].forEach((c) => (ALL_CAT_MAP[c.id] = c));
+
+    let currentType = "expense";
+    let transactions = JSON.parse(localStorage.getItem("bentocount_tx_v1") || "[]");
+    let recurring = JSON.parse(localStorage.getItem("bentocount_rec_v1") || "[]");
+    let spendingCap = parseFloat(localStorage.getItem("bentocount_cap_v1") || "0") || 0;
+    let savingsGoals = JSON.parse(localStorage.getItem("bentocount_goals_v1") || "[]");
+    let categoryLimits = JSON.parse(localStorage.getItem("bentocount_catlimits_v1") || "{}");
+
+    const monthPicker = document.getElementById("monthPicker");
+    const now = new Date();
+    monthPicker.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+    const capInput = document.getElementById("spendingCapInput");
+    if (spendingCap > 0) capInput.value = spendingCap;
+
+    function notify(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove("show"), 3600);
+    }
+
+    function fmtEur(num) {
+      return num.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+    }
+
+    function saveData() {
+      localStorage.setItem("bentocount_tx_v1", JSON.stringify(transactions));
+      localStorage.setItem("bentocount_rec_v1", JSON.stringify(recurring));
+      localStorage.setItem("bentocount_cap_v1", String(spendingCap));
+      localStorage.setItem("bentocount_goals_v1", JSON.stringify(savingsGoals));
+      localStorage.setItem("bentocount_catlimits_v1", JSON.stringify(categoryLimits));
+    }
+
+    // Fijar / borrar tope máximo mensual
+    document.getElementById("btnSaveCap").onclick = () => {
+      const val = parseFloat(capInput.value);
+      if (!val || val <= 0) return notify("Escribe un tope mayor que 0 €.");
+      spendingCap = val;
+      saveData();
+      renderAll();
+      notify(`Tope mensual fijado en ${fmtEur(spendingCap)}`);
+    };
+
+    document.getElementById("btnClearCap").onclick = () => {
+      spendingCap = 0;
+      capInput.value = "";
+      saveData();
+      renderAll();
+      notify("Tope de gasto eliminado.");
+    };
+
+    // Navegación pestañas
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+        if (btn.dataset.tab === "tab-stats") {
+          requestAnimationFrame(() => renderStats());
+        }
+      };
+    });
+
+    window.addEventListener("resize", () => {
+      if (document.getElementById("tab-stats").classList.contains("active")) renderStats();
+    });
+
+    function populateCategorySelects() {
+      const txSel = document.getElementById("txCategory");
+      txSel.innerHTML = CATEGORIES[currentType]
+        .map((c) => `<option value="${c.id}">${c.label}</option>`)
+        .join("");
+
+      const filterSel = document.getElementById("filterCat");
+      const prevFilter = filterSel.value;
+      filterSel.innerHTML =
+        `<option value="ALL">Todas las categorías</option>` +
+        [...CATEGORIES.expense, ...CATEGORIES.income]
+          .map((c) => `<option value="${c.id}">${c.label}</option>`)
+          .join("");
+      if (prevFilter) filterSel.value = prevFilter;
+
+      document.getElementById("catLimitSelect").innerHTML = CATEGORIES.expense
+        .map((c) => `<option value="${c.id}">${c.label}</option>`)
+        .join("");
+    }
+
+    function populateRecCategorySelect() {
+      const rType = document.getElementById("recType").value;
+      document.getElementById("recCategory").innerHTML = CATEGORIES[rType]
+        .map((c) => `<option value="${c.id}">${c.label}</option>`)
+        .join("");
+    }
+
+    document.getElementById("recType").onchange = populateRecCategorySelect;
+
+    document.getElementById("btnTypeExpense").onclick = () => {
+      currentType = "expense";
+      document.getElementById("btnTypeExpense").className = "type-opt active-expense";
+      document.getElementById("btnTypeIncome").className = "type-opt";
+      populateCategorySelects();
+    };
+
+    document.getElementById("btnTypeIncome").onclick = () => {
+      currentType = "income";
+      document.getElementById("btnTypeIncome").className = "type-opt active-income";
+      document.getElementById("btnTypeExpense").className = "type-opt";
+      populateCategorySelects();
+    };
+
+    // Chips de suma rápida (+2€, +5€, +10€...)
+    document.querySelectorAll("[data-add-amt]").forEach((chip) => {
+      chip.onclick = () => {
+        const inp = document.getElementById("txAmount");
+        const cur = parseFloat(inp.value) || 0;
+        inp.value = (cur + Number(chip.dataset.addAmt)).toFixed(2);
+      };
+    });
+
+    // Añadir movimiento + Avisos de Tope Global y Tope de Categoría
+    document.getElementById("btnAddTx").onclick = () => {
+      const amount = parseFloat(document.getElementById("txAmount").value);
+      const catId = document.getElementById("txCategory").value;
+      const note = document.getElementById("txNote").value.trim() || ALL_CAT_MAP[catId].label;
+
+      if (!amount || amount <= 0) return notify("Introduce un importe mayor que 0.");
+
+      transactions.unshift({
+        id: Date.now(),
+        month: monthPicker.value,
+        date: new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" }),
+        type: currentType,
+        category: catId,
+        note,
+        amount
+      });
+
+      saveData();
+      document.getElementById("txAmount").value = "";
+      document.getElementById("txNote").value = "";
+      renderAll();
+
+      if (currentType === "expense") {
+        const monthTxs = getMonthTransactions();
+        const catLimit = categoryLimits[catId];
+        if (catLimit && catLimit > 0) {
+          const catSpent = monthTxs
+            .filter((t) => t.type === "expense" && t.category === catId)
+            .reduce((acc, t) => acc + t.amount, 0);
+          if (catSpent > catLimit) {
+            notify(`⚠ Has superado el límite de ${ALL_CAT_MAP[catId].label} (${fmtEur(catSpent)} / ${fmtEur(catLimit)})`);
+            return;
+          }
+        }
+        if (spendingCap > 0) {
+          const totalSpent = monthTxs.filter((t) => t.type === "expense").reduce((acc, t) => acc + t.amount, 0);
+          const rem = spendingCap - totalSpent;
+          notify(rem < 0 ? `⚠ Tope mensual superado en ${fmtEur(Math.abs(rem))}` : `Gasto guardado · Quedan ${fmtEur(rem)} del tope`);
+          return;
+        }
+      }
+      notify(currentType === "expense" ? `Gasto añadido: -${fmtEur(amount)}` : `Ingreso añadido: +${fmtEur(amount)}`);
+    };
+
+    document.getElementById("txAmount").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("btnAddTx").click();
+    });
+
+    monthPicker.onchange = renderAll;
+    document.getElementById("filterCat").onchange = renderAll;
+    document.getElementById("searchTxInput").oninput = renderAll;
+    document.getElementById("searchAllMonths").onchange = renderAll;
+    document.getElementById("trendMonthsSelect").onchange = renderStats;
+
+    function getMonthTransactions() {
+      return transactions.filter((t) => t.month === monthPicker.value);
+    }
+
+    function getRemainingDaysInSelectedMonth() {
+      const [yStr, mStr] = monthPicker.value.split("-");
+      const y = Number(yStr), m = Number(mStr);
+      const lastDay = new Date(y, m, 0).getDate();
+      const today = new Date();
+      if (today.getFullYear() === y && today.getMonth() + 1 === m) {
+        return Math.max(1, lastDay - today.getDate() + 1);
+      }
+      return lastDay;
+    }
+
+    function renderCapMonitor(expense, remDays) {
+      const body = document.getElementById("capMonitorBody");
+      const hint = document.getElementById("capEmptyHint");
+
+      if (!spendingCap || spendingCap <= 0) {
+        body.style.display = "none";
+        hint.style.display = "block";
+        return;
+      }
+
+      body.style.display = "flex";
+      hint.style.display = "none";
+
+      const pct = Math.round((expense / spendingCap) * 100);
+      const remaining = spendingCap - expense;
+      const fill = document.getElementById("capBarFill");
+      fill.style.width = Math.min(100, pct) + "%";
+      fill.className = "cap-bar-fill" + (pct > 100 ? " over" : pct >= 80 ? " warn" : "");
+
+      document.getElementById("capSpentText").textContent = `Gastado: ${fmtEur(expense)} / ${fmtEur(spendingCap)}`;
+      document.getElementById("capPctText").textContent = `${pct} % del tope`;
+
+      const msgEl = document.getElementById("capStatusMsg");
+      if (remaining < 0) {
+        msgEl.style.color = "var(--accent)";
+        msgEl.textContent = `⚠ Límite sobrepasado en ${fmtEur(Math.abs(remaining))}. Intenta frenar gastos variables.`;
+      } else if (pct >= 80) {
+        msgEl.style.color = "var(--warn)";
+        msgEl.textContent = `Atención: Te quedan ${fmtEur(remaining)} (${fmtEur(remaining / remDays)}/día durante ${remDays} días).`;
+      } else {
+        msgEl.style.color = "var(--ok)";
+        msgEl.textContent = `Vas bien: Te quedan ${fmtEur(remaining)} de margen (${fmtEur(remaining / remDays)}/día durante ${remDays} días).`;
+      }
+    }
+
+    function formatNoteWithTags(note) {
+      return escapeHtml(note).replace(/(#[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]+)/g, '<span class="tag-pill">$1</span>');
+    }
+
+    function renderAll() {
+      const monthTxs = getMonthTransactions();
+      let income = 0, expense = 0, incCount = 0, expCount = 0;
+      const byCat = {};
+
+      monthTxs.forEach((t) => {
+        if (t.type === "income") {
+          income += t.amount;
+          incCount++;
+        } else {
+          expense += t.amount;
+          expCount++;
+          byCat[t.category] = (byCat[t.category] || 0) + t.amount;
+        }
+      });
+
+      const balance = income - expense;
+      const savingsRate = income > 0 ? Math.max(0, Math.round((balance / income) * 100)) : 0;
+      const remDays = getRemainingDaysInSelectedMonth();
+      const dailyLimit = balance > 0 ? balance / remDays : 0;
+
+      const balEl = document.getElementById("kpiBalance");
+      balEl.textContent = fmtEur(balance);
+      balEl.style.color = balance < 0 ? "#ff6b57" : "#ffffff";
+
+      document.getElementById("kpiDaily").textContent =
+        balance > 0 ? `Límite hoy: ${fmtEur(dailyLimit)}/día (${remDays}d)` : "Balance negativo";
+      document.getElementById("kpiIncome").textContent = "+" + fmtEur(income);
+      document.getElementById("kpiIncomeCount").textContent = `${incCount} entrada(s)`;
+      document.getElementById("kpiExpense").textContent = "-" + fmtEur(expense);
+      document.getElementById("kpiExpenseCount").textContent = `${expCount} movimiento(s)`;
+      document.getElementById("kpiSavingsRate").textContent = `${savingsRate} %`;
+
+      const topEntry = Object.entries(byCat).sort((a, b) => b[1] - a[1])[0];
+      document.getElementById("kpiTopCat").textContent = topEntry
+        ? `Top: ${ALL_CAT_MAP[topEntry[0]]?.label || topEntry[0]}`
+        : "Mayor gasto: —";
+
+      renderCapMonitor(expense, remDays);
+
+      // Filtrado y búsqueda por texto / #etiquetas
+      const searchAll = document.getElementById("searchAllMonths").checked;
+      const query = document.getElementById("searchTxInput").value.trim().toLowerCase();
+      const filterCat = document.getElementById("filterCat").value;
+
+      let pool = searchAll ? transactions : monthTxs;
+      if (filterCat !== "ALL") pool = pool.filter((t) => t.category === filterCat);
+      if (query) {
+        pool = pool.filter(
+          (t) =>
+            t.note.toLowerCase().includes(query) ||
+            (ALL_CAT_MAP[t.category]?.label || "").toLowerCase().includes(query)
+        );
+      }
+
+      const summaryBar = document.getElementById("searchSummaryBar");
+      if (query || searchAll || filterCat !== "ALL") {
+        const sumExp = pool.filter((t) => t.type === "expense").reduce((a, b) => a + b.amount, 0);
+        const sumInc = pool.filter((t) => t.type === "income").reduce((a, b) => a + b.amount, 0);
+        summaryBar.style.display = "block";
+        summaryBar.textContent = `Filtro activo (${pool.length} movs): Ingresos +${fmtEur(sumInc)} · Gastos -${fmtEur(sumExp)}`;
+      } else {
+        summaryBar.style.display = "none";
+      }
+
+      const listEl = document.getElementById("txList");
+      listEl.innerHTML = "";
+      if (!pool.length) {
+        listEl.innerHTML = `<div class="desc-text">No hay movimientos que coincidan con este filtro.</div>`;
+      } else {
+        pool.forEach((t) => {
+          const catObj = ALL_CAT_MAP[t.category] || { label: t.category };
+          const div = document.createElement("div");
+          div.className = `tx-item ${t.type}`;
+          div.innerHTML = `
+            <div>
+              <div class="tx-title">${formatNoteWithTags(t.note)}</div>
+              <div class="tx-meta">${searchAll ? t.month + " · " : ""}${t.date} · ${catObj.label}</div>
+            </div>
+            <div class="row">
+              <span class="tx-amount ${t.type === "income" ? "val-ok" : "val-bad"}">
+                ${t.type === "income" ? "+" : "-"}${fmtEur(t.amount)}
+              </span>
+              <button type="button" class="btn" data-del="${t.id}" style="padding:4px 8px; font-size:0.6rem;">✕</button>
+            </div>
+          `;
+          div.querySelector("[data-del]").onclick = () => {
+            transactions = transactions.filter((item) => item.id !== t.id);
+            saveData();
+            renderAll();
+          };
+          listEl.appendChild(div);
+        });
+      }
+
+      renderStats();
+      renderGoals();
+      renderCategoryLimits(byCat);
+      renderRecurring();
+    }
+
+    // =========================================================================
+    // 02 · RADIOGRAFÍA 50/30/20 + EVOLUCIÓN ANUAL + CATEGORÍAS
+    // =========================================================================
+    function renderStats() {
+      const monthTxs = getMonthTransactions();
+      let income = 0, needs = 0, wants = 0;
+      const catTotals = {};
+
+      monthTxs.forEach((t) => {
+        if (t.type === "income") {
+          income += t.amount;
+        } else {
+          const cat = ALL_CAT_MAP[t.category];
+          if (cat && cat.bucket === "needs") needs += t.amount;
+          else wants += t.amount;
+          catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
+        }
+      });
+
+      const saved = Math.max(0, income - (needs + wants));
+      const base = income > 0 ? income : Math.max(1, needs + wants);
+
+      const pNeeds = Math.round((needs / base) * 100);
+      const pWants = Math.round((wants / base) * 100);
+      const pSave = income > 0 ? Math.round((saved / income) * 100) : 0;
+
+      document.getElementById("ruleNeedsLabel").textContent = `${fmtEur(needs)} / ${fmtEur(income * 0.5)} (${pNeeds} %)`;
+      const bNeeds = document.getElementById("barNeeds");
+      bNeeds.style.width = Math.min(100, pNeeds * 2) + "%";
+      bNeeds.className = "bar-fill" + (pNeeds > 50 ? " over" : "");
+
+      document.getElementById("ruleWantsLabel").textContent = `${fmtEur(wants)} / ${fmtEur(income * 0.3)} (${pWants} %)`;
+      const bWants = document.getElementById("barWants");
+      bWants.style.width = Math.min(100, Math.round((pWants / 30) * 100)) + "%";
+      bWants.className = "bar-fill" + (pWants > 30 ? " over" : "");
+
+      document.getElementById("ruleSaveLabel").textContent = `${fmtEur(saved)} / ${fmtEur(income * 0.2)} (${pSave} %)`;
+      const bSave = document.getElementById("barSave");
+      bSave.style.width = Math.min(100, Math.round((pSave / 20) * 100)) + "%";
+
+      const sortedCats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+      const totalExp = sortedCats.reduce((acc, [, v]) => acc + v, 0);
+
+      const breakdownEl = document.getElementById("catBreakdown");
+      breakdownEl.innerHTML = "";
+      if (!sortedCats.length) {
+        breakdownEl.innerHTML = `<div class="desc-text">Registra algún gasto para ver el análisis por categorías.</div>`;
+      } else {
+        sortedCats.forEach(([catId, val]) => {
+          const pct = totalExp > 0 ? Math.round((val / totalExp) * 100) : 0;
+          const div = document.createElement("div");
+          div.className = "tx-item expense";
+          div.innerHTML = `
+            <div class="tx-title">${ALL_CAT_MAP[catId]?.label || catId}</div>
+            <div class="tx-amount">${fmtEur(val)} <span class="tx-meta">(${pct} % del gasto)</span></div>
+          `;
+          breakdownEl.appendChild(div);
+        });
+      }
+
+      drawCategoryChart(sortedCats, totalExp);
+      drawTrendChart();
+    }
+
+    function drawTrendChart() {
+      const canvas = document.getElementById("trendChart");
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = rect.width || 740;
+      const cssH = 230;
+
+      canvas.style.height = cssH + "px";
+      canvas.width = Math.floor(cssW * dpr);
+      canvas.height = Math.floor(cssH * dpr);
+
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, cssW, cssH);
+
+      const count = Number(document.getElementById("trendMonthsSelect").value) || 6;
+      const [selY, selM] = monthPicker.value.split("-").map(Number);
+      const months = [];
+
+      for (let i = count - 1; i >= 0; i--) {
+        const d = new Date(selY, selM - 1 - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const label = d.toLocaleDateString("es-ES", { month: "short" }).toUpperCase();
+        const txs = transactions.filter((t) => t.month === key);
+        const inc = txs.filter((t) => t.type === "income").reduce((a, b) => a + b.amount, 0);
+        const exp = txs.filter((t) => t.type === "expense").reduce((a, b) => a + b.amount, 0);
+        months.push({ key, label, inc, exp });
+      }
+
+      const maxVal = Math.max(100, ...months.flatMap((m) => [m.inc, m.exp]));
+      const chartTop = 26;
+      const chartBottom = cssH - 32;
+      const chartH = chartBottom - chartTop;
+      const colW = (cssW - 24) / count;
+      const barW = Math.min(22, Math.max(8, colW * 0.28));
+
+      // Leyenda superior
+      ctx.fillStyle = "#1b7a3d";
+      ctx.fillRect(12, 8, 12, 10);
+      ctx.fillStyle = "#111111";
+      ctx.font = "bold 11px monospace";
+      ctx.fillText("INGRESOS", 28, 17);
+
+      ctx.fillStyle = "#d9381e";
+      ctx.fillRect(105, 8, 12, 10);
+      ctx.fillStyle = "#111111";
+      ctx.fillText("GASTOS", 121, 17);
+
+      // Línea base
+      ctx.strokeStyle = "#111111";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(10, chartBottom);
+      ctx.lineTo(cssW - 10, chartBottom);
+      ctx.stroke();
+
+      months.forEach((m, idx) => {
+        const cx = 12 + idx * colW + colW / 2;
+        const incH = (m.inc / maxVal) * chartH;
+        const expH = (m.exp / maxVal) * chartH;
+
+        ctx.fillStyle = "#1b7a3d";
+        ctx.fillRect(cx - barW - 2, chartBottom - incH, barW, incH);
+
+        ctx.fillStyle = "#d9381e";
+        ctx.fillRect(cx + 2, chartBottom - expH, barW, expH);
+
+        ctx.fillStyle = m.key === monthPicker.value ? "#d9381e" : "#111111";
+        ctx.font = m.key === monthPicker.value ? "bold 11px monospace" : "10px monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(m.label, cx, cssH - 12);
+      });
+      ctx.textAlign = "left";
+    }
+
+    function drawCategoryChart(entries, totalExp) {
+      const canvas = document.getElementById("catChart");
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = rect.width || 740;
+      const rowH = 44;
+      const cssH = Math.max(200, entries.length ? entries.length * rowH + 24 : 130);
+
+      canvas.style.height = cssH + "px";
+      canvas.width = Math.floor(cssW * dpr);
+      canvas.height = Math.floor(cssH * dpr);
+
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, cssW, cssH);
+
+      if (!entries.length || totalExp <= 0) {
+        ctx.fillStyle = "#5e5e5a";
+        ctx.font = "14px monospace";
+        ctx.fillText("Sin gastos registrados este mes", 16, 48);
+        return;
+      }
+
+      const maxVal = entries[0][1];
+      const isNarrow = cssW < 460;
+      const labelColW = isNarrow ? 135 : 210;
+      const rightPad = isNarrow ? 105 : 135;
+      const barAreaW = Math.max(60, cssW - labelColW - rightPad);
+
+      entries.forEach(([catId, val], idx) => {
+        const y = 14 + idx * rowH;
+        const label = ALL_CAT_MAP[catId]?.label || catId;
+        const pct = Math.round((val / totalExp) * 100);
+        const barW = Math.max(8, (val / maxVal) * barAreaW);
+
+        ctx.fillStyle = "#111111";
+        ctx.font = isNarrow ? "bold 11px monospace" : "bold 13px monospace";
+        ctx.fillText(label.slice(0, isNarrow ? 16 : 24), 4, y + 21);
+
+        ctx.fillStyle = "#e4e4de";
+        ctx.fillRect(labelColW, y + 4, barAreaW, 24);
+
+        ctx.fillStyle = idx === 0 ? "#d9381e" : "#111111";
+        ctx.fillRect(labelColW, y + 4, barW, 24);
+
+        ctx.fillStyle = "#111111";
+        ctx.font = isNarrow ? "bold 11px monospace" : "bold 12px monospace";
+        ctx.fillText(`${fmtEur(val)} (${pct}%)`, labelColW + barAreaW + 10, y + 21);
+      });
+    }
+
+    // =========================================================================
+    // 03 · HUCHAS DE AHORRO Y TOPES POR CATEGORÍA
+    // =========================================================================
+    document.getElementById("btnAddGoal").onclick = () => {
+      const name = document.getElementById("goalName").value.trim();
+      const target = parseFloat(document.getElementById("goalTarget").value);
+      if (!name || !target || target <= 0) return notify("Escribe nombre y objetivo mayor que 0 €.");
+      savingsGoals.push({ id: Date.now(), name, target, saved: 0 });
+      saveData();
+      document.getElementById("goalName").value = "";
+      document.getElementById("goalTarget").value = "";
+      renderGoals();
+      notify(`Hucha "${name}" creada.`);
+    };
+
+    function renderGoals() {
+      const list = document.getElementById("goalsList");
+      list.innerHTML = "";
+      if (!savingsGoals.length) {
+        list.innerHTML = `<div class="desc-text">Aún no tienes ninguna hucha o meta de ahorro creada.</div>`;
+        return;
+      }
+
+      savingsGoals.forEach((g) => {
+        const pct = Math.min(100, Math.round((g.saved / g.target) * 100));
+        const rem = Math.max(0, g.target - g.saved);
+        const div = document.createElement("div");
+        div.className = "goal-card";
+        div.innerHTML = `
+          <div class="rule-head">
+            <span>${escapeHtml(g.name)} (${pct} %)</span>
+            <span>${fmtEur(g.saved)} / ${fmtEur(g.target)}</span>
+          </div>
+          <div class="bar-bg"><div class="bar-fill good" style="width:${pct}%"></div></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+            <span class="desc-text">${rem > 0 ? `Faltan ${fmtEur(rem)}` : "¡Meta completada!"}</span>
+            <div class="row">
+              <button type="button" class="btn btn-ok" data-add="20" style="padding:4px 8px; font-size:0.62rem;">+20 €</button>
+              <button type="button" class="btn btn-ok" data-add="50" style="padding:4px 8px; font-size:0.62rem;">+50 €</button>
+              <button type="button" class="btn" data-custom="1" style="padding:4px 8px; font-size:0.62rem;">Otro importe</button>
+              <button type="button" class="btn" data-del-g="1" style="padding:4px 8px; font-size:0.62rem;">✕</button>
+            </div>
+          </div>
+        `;
+        div.querySelectorAll("[data-add]").forEach((b) => {
+          b.onclick = () => {
+            g.saved += Number(b.dataset.add);
+            saveData();
+            renderGoals();
+            notify(`+${b.dataset.add} € añadidos a ${g.name}`);
+          };
+        });
+        div.querySelector("[data-custom]").onclick = () => {
+          const val = parseFloat(prompt(`¿Cuánto quieres sumar (o restar con -) a "${g.name}"?`, "100"));
+          if (!isNaN(val) && val !== 0) {
+            g.saved = Math.max(0, g.saved + val);
+            saveData();
+            renderGoals();
+          }
+        };
+        div.querySelector("[data-del-g]").onclick = () => {
+          savingsGoals = savingsGoals.filter((x) => x.id !== g.id);
+          saveData();
+          renderGoals();
+        };
+        list.appendChild(div);
+      });
+    }
+
+    // Topes por categoría
+    document.getElementById("btnSaveCatLimit").onclick = () => {
+      const catId = document.getElementById("catLimitSelect").value;
+      const amt = parseFloat(document.getElementById("catLimitAmount").value);
+      if (!amt || amt <= 0) return notify("Escribe un límite mayor que 0 €.");
+      categoryLimits[catId] = amt;
+      saveData();
+      document.getElementById("catLimitAmount").value = "";
+      renderAll();
+      notify(`Límite fijado para ${ALL_CAT_MAP[catId].label}: ${fmtEur(amt)}`);
+    };
+
+    function renderCategoryLimits(byCat) {
+      const list = document.getElementById("catLimitsList");
+      list.innerHTML = "";
+      const entries = Object.entries(categoryLimits);
+      if (!entries.length) {
+        list.innerHTML = `<div class="desc-text">No hay topes individuales por categoría configurados.</div>`;
+        return;
+      }
+
+      entries.forEach(([catId, limit]) => {
+        const spent = byCat[catId] || 0;
+        const pct = Math.round((spent / limit) * 100);
+        const div = document.createElement("div");
+        div.className = "goal-card";
+        div.innerHTML = `
+          <div class="rule-head">
+            <span>${ALL_CAT_MAP[catId]?.label || catId} (${pct} %)</span>
+            <span>${fmtEur(spent)} / ${fmtEur(limit)}</span>
+          </div>
+          <div class="bar-bg">
+            <div class="bar-fill ${pct > 100 ? "over" : pct >= 80 ? "warn" : "good"}" style="width:${Math.min(100, pct)}%"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="desc-text">${spent > limit ? `⚠ Excedido en ${fmtEur(spent - limit)}` : `Margen restante: ${fmtEur(limit - spent)}`}</span>
+            <button type="button" class="btn" data-del-lim="1" style="padding:4px 8px; font-size:0.6rem;">Quitar</button>
+          </div>
+        `;
+        div.querySelector("[data-del-lim]").onclick = () => {
+          delete categoryLimits[catId];
+          saveData();
+          renderAll();
+        };
+        list.appendChild(div);
+      });
+    }
+
+    // =========================================================================
+    // 04 · GASTOS FIJOS RECURRENTES Y EXPORTACIÓN CSV/JSON
+    // =========================================================================
+    document.getElementById("btnAddRec").onclick = () => {
+      const type = document.getElementById("recType").value;
+      const amount = parseFloat(document.getElementById("recAmount").value);
+      const category = document.getElementById("recCategory").value;
+      const note = document.getElementById("recNote").value.trim() || ALL_CAT_MAP[category].label;
+
+      if (!amount || amount <= 0) return notify("Importe fijo no válido.");
+      recurring.push({ id: Date.now(), type, amount, category, note });
+      saveData();
+      document.getElementById("recAmount").value = "";
+      document.getElementById("recNote").value = "";
+      renderRecurring();
+      notify("Movimiento fijo guardado.");
+    };
+
+    function renderRecurring() {
+      const list = document.getElementById("recList");
+      list.innerHTML = "";
+      if (!recurring.length) {
+        list.innerHTML = `<div class="desc-text">No tienes gastos o ingresos fijos guardados.</div>`;
+        return;
+      }
+      recurring.forEach((r) => {
+        const div = document.createElement("div");
+        div.className = `tx-item ${r.type}`;
+        div.innerHTML = `
+          <div>
+            <div class="tx-title">${escapeHtml(r.note)}</div>
+            <div class="tx-meta">${ALL_CAT_MAP[r.category]?.label || r.category}</div>
+          </div>
+          <div class="row">
+            <span class="tx-amount ${r.type === "income" ? "val-ok" : "val-bad"}">
+              ${r.type === "income" ? "+" : "-"}${fmtEur(r.amount)}
+            </span>
+            <button type="button" class="btn" data-del-rec="${r.id}" style="padding:4px 8px; font-size:0.6rem;">✕</button>
+          </div>
+        `;
+        div.querySelector("[data-del-rec]").onclick = () => {
+          recurring = recurring.filter((x) => x.id !== r.id);
+          saveData();
+          renderRecurring();
+        };
+        list.appendChild(div);
+      });
+    }
+
+    document.getElementById("btnApplyRec").onclick = () => {
+      if (!recurring.length) return notify("Añade primero algún movimiento fijo arriba.");
+      const m = monthPicker.value;
+      const todayStr = new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" });
+      recurring.forEach((r, idx) => {
+        transactions.unshift({
+          id: Date.now() + idx,
+          month: m,
+          date: todayStr,
+          type: r.type,
+          category: r.category,
+          note: r.note + " (Fijo)",
+          amount: r.amount
+        });
+      });
+      saveData();
+      renderAll();
+      notify(`Aplicados ${recurring.length} movimientos fijos a ${m}.`);
+    };
+
+    document.getElementById("btnExportCsv").onclick = () => {
+      const rows = getMonthTransactions();
+      if (!rows.length) return notify("No hay datos en este mes para exportar.");
+      const header = "Fecha;Tipo;Categoria;Concepto;Importe\n";
+      const body = rows
+        .map((r) => `${r.date};${r.type === "income" ? "Ingreso" : "Gasto"};${ALL_CAT_MAP[r.category]?.label || r.category};"${r.note.replace(/"/g, '""')}";${r.type === "income" ? r.amount : -r.amount}`)
+        .join("\n");
+      const blob = new Blob(["\uFEFF" + header + body], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `BentoCount_${monthPicker.value}.csv`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    };
+
+    document.getElementById("btnBackupJson").onclick = () => {
+      const payload = JSON.stringify({ transactions, recurring, spendingCap, savingsGoals, categoryLimits }, null, 2);
+      const blob = new Blob([payload], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `BentoCount_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    };
+
+    document.getElementById("importJsonFile").onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const data = JSON.parse(await file.text());
+        if (Array.isArray(data.transactions)) transactions = data.transactions;
+        if (Array.isArray(data.recurring)) recurring = data.recurring;
+        if (typeof data.spendingCap === "number") {
+          spendingCap = data.spendingCap;
+          capInput.value = spendingCap > 0 ? spendingCap : "";
+        }
+        if (Array.isArray(data.savingsGoals)) savingsGoals = data.savingsGoals;
+        if (data.categoryLimits && typeof data.categoryLimits === "object") categoryLimits = data.categoryLimits;
+        saveData();
+        renderAll();
+        notify("Copia de seguridad restaurada.");
+      } catch (err) {
+        notify("Archivo JSON no válido.");
+      }
+      e.target.value = "";
+    };
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, (m) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[m]));
+    }
+
+    // Soporte para pre-rellenar desde URL (?amount=24.50&note=Compra+Super&cat=comida)
+    function checkUrlPrefill() {
+      const params = new URLSearchParams(location.search);
+      const amt = parseFloat(params.get("amount"));
+      const note = params.get("note");
+      const cat = params.get("cat");
+      if (amt > 0) document.getElementById("txAmount").value = amt.toFixed(2);
+      if (note) document.getElementById("txNote").value = note;
+      if (cat && ALL_CAT_MAP[cat]) document.getElementById("txCategory").value = cat;
+    }
+
+    populateCategorySelects();
+    populateRecCategorySelect();
+    checkUrlPrefill();
+    renderAll();
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

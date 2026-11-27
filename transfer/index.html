@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f5f5f3" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <title>Bento Transfer</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+  <style>
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --ink: #111111;
+      --muted: #5e5e5a;
+      --border: #dcdcd6;
+      --accent: #d9381e;
+      --accent-hover: #b82d16;
+      --ok: #1b7a3d;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 780px;
+      padding: 20px 14px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .brand h1 span { color: var(--accent); }
+
+    .brand p {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .status-pill {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 5px 9px;
+      border: 1px solid var(--ink);
+      background: var(--surface);
+      text-transform: uppercase;
+    }
+
+    .status-pill.connected { border-color: var(--ok); color: var(--ok); }
+
+    /* Selector de modo */
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .mode-btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      padding: 11px 10px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .mode-btn.active {
+      background: var(--ink);
+      color: var(--surface);
+      border-bottom: 3px solid var(--accent);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .step-title {
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .desc-text {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    .btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      padding: 10px 14px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+
+    .btn:hover:not(:disabled) { background: var(--ink); color: var(--surface); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn-accent {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-accent:hover:not(:disabled) {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    /* Barra de sala fija / dispositivo frecuente */
+    .fav-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+    }
+
+    /* Caja PIN 4 dígitos */
+    .pin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .pin-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .pin-display {
+      font-family: var(--mono);
+      font-size: 1.9rem;
+      font-weight: 800;
+      letter-spacing: 0.25em;
+      text-align: center;
+      background: var(--surface);
+      border: 2px solid var(--ink);
+      padding: 10px;
+      color: var(--accent);
+    }
+
+    .pin-input {
+      font-family: var(--mono);
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: 0.25em;
+      text-align: center;
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 10px;
+      width: 100%;
+      outline: none;
+    }
+
+    .pin-input:focus { border-color: var(--accent); }
+
+    /* QR y código corto */
+    .qr-area {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }
+
+    #qrCanvas {
+      width: 240px;
+      height: 240px;
+      max-width: 100%;
+      border: 2px solid var(--ink);
+      background: #ffffff;
+      image-rendering: pixelated;
+    }
+
+    .short-code-box {
+      width: 100%;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .scanner-wrap {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      background: #111111;
+      padding: 10px;
+    }
+
+    .scanner-wrap.active { display: flex; }
+
+    #camVideo {
+      width: 100%;
+      max-height: 280px;
+      object-fit: cover;
+      border: 1px solid var(--accent);
+    }
+
+    .input, textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 9px 10px;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--ink);
+      outline: none;
+    }
+
+    .input:focus, textarea:focus {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+
+    .transfer-zone {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .transfer-zone.active { display: flex; }
+
+    .sync-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 6px 9px;
+      user-select: none;
+    }
+
+    .sync-toggle input {
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .feed-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .feed-item {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 11px 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .feed-thumb {
+      display: block;
+      max-width: 150px;
+      max-height: 110px;
+      margin-top: 8px;
+      border: 1px solid var(--ink);
+      object-fit: cover;
+      background: var(--bg);
+    }
+
+    .feed-meta {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .feed-text {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      word-break: break-word;
+      white-space: pre-wrap;
+      margin-top: 4px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: var(--border);
+      display: none;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.15s;
+    }
+
+    .manual-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 560px) {
+      .pin-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1><span>BENTO</span> TRANSFER</h1>
+        <p>Envío directo P2P · Android, iPhone y PC · Sin nube</p>
+      </div>
+      <div class="status-pill" id="connStatus">Sin enlazar</div>
+    </header>
+
+    <!-- SELECTOR DE MODO DE CONEXIÓN -->
+    <div class="mode-tabs" id="modeTabs">
+      <button type="button" class="mode-btn active" data-mode="pin">01 · PIN Rápido (Con Red)</button>
+      <button type="button" class="mode-btn" data-mode="offline">02 · QR / Código (Sin Internet)</button>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODO 01: CONEXIÓN INSTANTÁNEA POR PIN DE 4 DÍGITOS + SALA FIJA        -->
+    <!-- ===================================================================== -->
+    <section class="card" id="pinCard">
+      <div class="step-title">Enlace en 3 segundos por PIN (Archivos 100 % P2P directo)</div>
+      <p class="desc-text">
+        Ideal para conectar PC y móvil al instante cuando ambos tienen conexión. El PIN solo sirve para encontrarse; tus archivos viajan directos de dispositivo a dispositivo.
+      </p>
+
+      <!-- Sala fija / Dispositivo frecuente -->
+      <div class="fav-bar">
+        <span style="font-family:var(--mono); font-size:0.66rem; font-weight:700; text-transform:uppercase;">
+          Sala Fija (PC ↔ Móvil):
+        </span>
+        <input type="text" id="favPinInput" class="input" maxlength="4" inputmode="numeric" style="width:86px; text-align:center; font-weight:800; letter-spacing:0.15em;" placeholder="1234" />
+        <button type="button" class="btn" id="btnSaveFav" style="padding:7px 10px; font-size:0.64rem;">Guardar</button>
+        <button type="button" class="btn btn-accent" id="btnHostFav" style="padding:7px 10px; font-size:0.64rem;">Abrir Fija</button>
+        <button type="button" class="btn" id="btnJoinFav" style="padding:7px 10px; font-size:0.64rem;">Unirse a Fija</button>
+      </div>
+
+      <div class="pin-grid">
+        <!-- Crear PIN -->
+        <div class="pin-box">
+          <div style="font-family:var(--mono); font-size:0.68rem; font-weight:700; text-transform:uppercase;">
+            Opción A · Crear Sala
+          </div>
+          <div class="pin-display" id="generatedPin">----</div>
+          <button type="button" class="btn btn-accent" id="btnGenPin">Generar PIN de 4 dígitos</button>
+          <div id="pinHostStatus" class="desc-text">Pulsa para crear un código temporal.</div>
+        </div>
+
+        <!-- Introducir PIN -->
+        <div class="pin-box">
+          <div style="font-family:var(--mono); font-size:0.68rem; font-weight:700; text-transform:uppercase;">
+            Opción B · Unirse con PIN
+          </div>
+          <input type="text" id="joinPinInput" class="pin-input" maxlength="4" inputmode="numeric" placeholder="0000" />
+          <button type="button" class="btn" id="btnJoinPin">Conectar al PIN</button>
+          <div id="pinJoinStatus" class="desc-text">Escribe el PIN del otro dispositivo.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- MODO 02: EMPAREJAMIENTO 100 % SIN INTERNET (QR + CÓDIGO CORTO)        -->
+    <!-- ===================================================================== -->
+    <section class="card" id="offlineCard" style="display:none;">
+      <div class="step-title">Enlace 100 % sin internet (Wi-Fi local o Hotspot)</div>
+      <p class="desc-text">
+        Funciona en modo avión usando el punto de acceso (Hotspot) del móvil sin datos.
+      </p>
+      <div class="btn-row">
+        <button type="button" class="btn btn-accent" id="createOfferBtn">1. Crear Sala (Dispositivo A)</button>
+        <button type="button" class="btn" id="scanOfferBtn">2. Escanear QR (Dispositivo B)</button>
+      </div>
+
+      <div class="scanner-wrap" id="scannerWrap">
+        <video id="camVideo" playsinline></video>
+        <button type="button" class="btn" id="stopScanBtn">Cancelar cámara</button>
+      </div>
+
+      <div class="qr-area" id="qrArea">
+        <div id="qrInstruction" style="font-family:var(--mono); font-size:0.72rem; font-weight:700; text-align:center;"></div>
+        <canvas id="qrCanvas" width="240" height="240"></canvas>
+
+        <div class="short-code-box">
+          <input type="text" id="manualCodeOut" class="input" readonly />
+          <button type="button" class="btn" id="copyCodeBtn">Copiar</button>
+          <button type="button" class="btn" id="shareLinkBtn" style="display:none;">Enviar</button>
+        </div>
+
+        <button type="button" class="btn btn-accent" id="scanAnswerBtn" style="display:none;">3. Escanear QR de respuesta</button>
+      </div>
+
+      <div class="manual-bar">
+        <div style="font-family:var(--mono); font-size:0.64rem; color:var(--muted); text-transform:uppercase;">
+          ¿Sin cámara? Pega aquí el código corto del otro dispositivo:
+        </div>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="manualCodeIn" class="input" placeholder="Pega el código corto aquí..." />
+          <button type="button" class="btn btn-accent" id="applyManualBtn">Conectar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- FASE 2: TÚNEL ACTIVO DE ENVÍO Y RECEPCIÓN (COMÚN A AMBOS MODOS)       -->
+    <!-- ===================================================================== -->
+    <section class="transfer-zone" id="transferZone">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span class="step-title" style="color:var(--ok);">● Túnel directo activo (Bidireccional)</span>
+          <div class="btn-row">
+            <label class="sync-toggle" title="Envía automáticamente lo que copies al portapapeles mientras esta ventana esté activa">
+              <input type="checkbox" id="liveClipToggle" />
+              Sync Portapapeles
+            </label>
+            <button type="button" class="btn" id="disconnectBtn" style="padding:5px 9px; font-size:0.62rem;">Desconectar</button>
+          </div>
+        </div>
+
+        <textarea id="msgInput" rows="3" placeholder="Escribe un enlace, contraseña o texto largo para enviar al instante..."></textarea>
+        <div class="btn-row">
+          <button type="button" class="btn btn-accent" id="sendTextBtn">Enviar Texto →</button>
+          <label class="btn" style="cursor:pointer;">
+            Enviar Archivos / Fotos (Múltiples)
+            <input type="file" id="fileInput" multiple hidden />
+          </label>
+        </div>
+
+        <div class="progress-bar" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div id="transferMeta" style="font-family:var(--mono); font-size:0.66rem; color:var(--muted);"></div>
+      </div>
+
+      <div style="font-family:var(--mono); font-size:0.68rem; color:var(--muted); text-transform:uppercase;">
+        Historial de esta sesión
+      </div>
+      <div class="feed-list" id="feedList"></div>
+    </section>
+  </div>
+
+  <script>
+    let pc = null;
+    let dataChannel = null;
+    let mqttClient = null;
+    let scanStream = null;
+    let scanAnimId = null;
+    let incomingFile = null;
+    let clipInterval = null;
+    let lastClipText = "";
+
+    const connStatus = document.getElementById("connStatus");
+    const modeTabs = document.getElementById("modeTabs");
+    const pinCard = document.getElementById("pinCard");
+    const offlineCard = document.getElementById("offlineCard");
+    const transferZone = document.getElementById("transferZone");
+
+    // =========================================================================
+    // SALA FIJA / DISPOSITIVOS FRECUENTES
+    // =========================================================================
+    const favPinInput = document.getElementById("favPinInput");
+    favPinInput.value = localStorage.getItem("bento_transfer_fav_pin") || "";
+
+    document.getElementById("btnSaveFav").onclick = () => {
+      const val = favPinInput.value.trim();
+      if (!/^\d{4}$/.test(val)) {
+        alert("Introduce 4 números para guardar tu sala fija.");
+        return;
+      }
+      localStorage.setItem("bento_transfer_fav_pin", val);
+      const btn = document.getElementById("btnSaveFav");
+      btn.textContent = "Guardada";
+      setTimeout(() => (btn.textContent = "Guardar"), 1400);
+    };
+
+    document.getElementById("btnHostFav").onclick = () => {
+      const val = favPinInput.value.trim();
+      if (!/^\d{4}$/.test(val)) {
+        alert("Escribe o guarda primero un PIN fijo de 4 dígitos.");
+        return;
+      }
+      hostWithPin(val);
+    };
+
+    document.getElementById("btnJoinFav").onclick = () => {
+      const val = favPinInput.value.trim();
+      if (!/^\d{4}$/.test(val)) {
+        alert("Escribe o guarda primero un PIN fijo de 4 dígitos.");
+        return;
+      }
+      joinWithPin(val);
+    };
+
+    // Cambio de pestañas PIN / Offline
+    document.querySelectorAll(".mode-btn").forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelectorAll(".mode-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const mode = btn.dataset.mode;
+        pinCard.style.display = mode === "pin" ? "flex" : "none";
+        offlineCard.style.display = mode === "offline" ? "flex" : "none";
+      };
+    });
+
+    // Si el dispositivo arranca sin conexión, saltar automáticamente al modo Offline
+    if (!navigator.onLine) {
+      document.querySelector('[data-mode="offline"]').click();
+    }
+
+    function initPeerConnection(useStun = false) {
+      if (pc) {
+        try { pc.close(); } catch (e) {}
+      }
+      const config = useStun
+        ? { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] }
+        : { iceServers: [] };
+
+      pc = new RTCPeerConnection(config);
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === "connected") {
+          onTunnelReady();
+        } else if (pc.connectionState === "disconnected" || pc.connectionState === "failed") {
+          connStatus.textContent = "Desconectado";
+          connStatus.classList.remove("connected");
+        }
+      };
+    }
+
+    function waitForIceGathering(peer, maxMs = 1800) {
+      return new Promise((resolve) => {
+        if (peer.iceGatheringState === "complete") {
+          resolve();
+        } else {
+          const check = () => {
+            if (peer.iceGatheringState === "complete") {
+              peer.removeEventListener("icegatheringstatechange", check);
+              resolve();
+            }
+          };
+          peer.addEventListener("icegatheringstatechange", check);
+          setTimeout(resolve, maxMs);
+        }
+      });
+    }
+
+    // =========================================================================
+    // MODO 01 · SEÑALIZACIÓN ULTRARRÁPIDA POR PIN DE 4 DÍGITOS (MQTT WSS)
+    // =========================================================================
+    const MQTT_BROKER = "wss://broker.emqx.io:8084/mqtt";
+    const TOPIC_PREFIX = "bentokit/transfer/v1/";
+
+    function cleanupMqtt() {
+      if (mqttClient) {
+        try { mqttClient.end(true); } catch (e) {}
+        mqttClient = null;
+      }
+    }
+
+    async function hostWithPin(pin) {
+      if (typeof mqtt === "undefined") {
+        alert("No hay red disponible. Usa la pestaña 02 · QR / Código (Sin Internet).");
+        return;
+      }
+      cleanupMqtt();
+      document.getElementById("generatedPin").textContent = pin;
+      const hostStatus = document.getElementById("pinHostStatus");
+      hostStatus.textContent = "Preparando sala...";
+      connStatus.textContent = `Sala ${pin}`;
+
+      initPeerConnection(true);
+      dataChannel = pc.createDataChannel("bento-p2p", { ordered: true });
+      setupDataChannel(dataChannel);
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      await waitForIceGathering(pc, 2200);
+
+      const offerPayload = JSON.stringify(pc.localDescription);
+      const topicOffer = `${TOPIC_PREFIX}${pin}/offer`;
+      const topicAnswer = `${TOPIC_PREFIX}${pin}/answer`;
+
+      mqttClient = mqtt.connect(MQTT_BROKER);
+      mqttClient.on("connect", () => {
+        mqttClient.subscribe(topicAnswer);
+        mqttClient.publish(topicOffer, offerPayload, { retain: true, qos: 1 });
+        hostStatus.textContent = `Esperando que el otro dispositivo introduzca ${pin}...`;
+      });
+
+      mqttClient.on("message", async (topic, message) => {
+        if (topic === topicAnswer) {
+          try {
+            const answerDesc = JSON.parse(message.toString());
+            await pc.setRemoteDescription(answerDesc);
+            hostStatus.textContent = "Conectando túnel directo P2P...";
+            mqttClient.publish(topicOffer, "", { retain: true });
+            mqttClient.publish(topicAnswer, "", { retain: true });
+          } catch (err) {}
+        }
+      });
+    }
+
+    function joinWithPin(pin) {
+      if (!/^\d{4}$/.test(pin)) {
+        alert("Introduce un PIN válido de 4 números.");
+        return;
+      }
+      if (typeof mqtt === "undefined") {
+        alert("No hay red disponible. Usa la pestaña 02 · QR / Código (Sin Internet).");
+        return;
+      }
+      cleanupMqtt();
+      const joinStatus = document.getElementById("pinJoinStatus");
+      joinStatus.textContent = `Buscando sala ${pin}...`;
+      connStatus.textContent = `Conectando ${pin}...`;
+
+      const topicOffer = `${TOPIC_PREFIX}${pin}/offer`;
+      const topicAnswer = `${TOPIC_PREFIX}${pin}/answer`;
+      let answered = false;
+
+      mqttClient = mqtt.connect(MQTT_BROKER);
+      mqttClient.on("connect", () => {
+        mqttClient.subscribe(topicOffer);
+      });
+
+      mqttClient.on("message", async (topic, message) => {
+        if (topic === topicOffer && !answered && message.length > 10) {
+          answered = true;
+          try {
+            const offerDesc = JSON.parse(message.toString());
+            initPeerConnection(true);
+            pc.ondatachannel = (e) => {
+              dataChannel = e.channel;
+              setupDataChannel(dataChannel);
+            };
+            await pc.setRemoteDescription(offerDesc);
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            await waitForIceGathering(pc, 2200);
+
+            mqttClient.publish(topicAnswer, JSON.stringify(pc.localDescription), { qos: 1 });
+            joinStatus.textContent = "Sala encontrada. Abriendo túnel directo...";
+          } catch (err) {
+            joinStatus.textContent = "Error al enlazar con ese PIN.";
+          }
+        }
+      });
+    }
+
+    // Host aleatorio
+    document.getElementById("btnGenPin").onclick = () => {
+      const pin = String(Math.floor(1000 + Math.random() * 9000));
+      hostWithPin(pin);
+    };
+
+    // Invitado
+    document.getElementById("btnJoinPin").onclick = () => {
+      joinWithPin(document.getElementById("joinPinInput").value.trim());
+    };
+
+    document.getElementById("joinPinInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") document.getElementById("btnJoinPin").click();
+    });
+
+    // =========================================================================
+    // MODO 02 · EMPAQUETADOR ULTRA-CORTO BASE64URL (~115 CARACTERES) SIN RED
+    // =========================================================================
+    const qrArea = document.getElementById("qrArea");
+    const qrCanvas = document.getElementById("qrCanvas");
+    const qrInstruction = document.getElementById("qrInstruction");
+    const scanAnswerBtn = document.getElementById("scanAnswerBtn");
+    const manualCodeOut = document.getElementById("manualCodeOut");
+    const shareLinkBtn = document.getElementById("shareLinkBtn");
+
+    function hexToB64Url(hexStr) {
+      const bytes = hexStr.split(":").map((h) => parseInt(h, 16));
+      let bin = "";
+      for (const b of bytes) bin += String.fromCharCode(b);
+      return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
+    function b64UrlToHex(b64) {
+      const norm = b64.replace(/-/g, "+").replace(/_/g, "/");
+      const bin = atob(norm);
+      const out = [];
+      for (let i = 0; i < bin.length; i++) {
+        out.push(bin.charCodeAt(i).toString(16).toUpperCase().padStart(2, "0"));
+      }
+      return out.join(":");
+    }
+
+    function toB64Url(str) {
+      return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
+    function fromB64Url(b64) {
+      return atob(b64.replace(/-/g, "+").replace(/_/g, "/"));
+    }
+
+    function packSignal(desc) {
+      const lines = desc.sdp.split(/\r?\n/);
+      let ufrag = "";
+      let pwd = "";
+      let fpB64 = "";
+      const endpoints = [];
+
+      for (const line of lines) {
+        if (line.startsWith("a=ice-ufrag:")) ufrag = line.slice(12);
+        else if (line.startsWith("a=ice-pwd:")) pwd = line.slice(10);
+        else if (line.startsWith("a=fingerprint:sha-256 ")) {
+          fpB64 = hexToB64Url(line.slice(22));
+        } else if (line.startsWith("a=candidate:") && line.includes(" udp ") && line.includes(" typ host")) {
+          const parts = line.split(" ");
+          const ip = parts[4];
+          const port = parts[5];
+          if (ip && port && !ip.includes(":")) {
+            endpoints.push(`${ip}:${port}`);
+          }
+        }
+      }
+
+      const t = desc.type === "offer" ? "o" : "a";
+      const raw = `${t}|${ufrag}|${pwd}|${fpB64}|${endpoints.slice(0, 2).join(",")}`;
+      return toB64Url(raw);
+    }
+
+    function unpackSignal(code) {
+      let clean = code.trim();
+      if (clean.includes("#c=")) clean = clean.split("#c=")[1];
+
+      const decoded = fromB64Url(clean);
+      const [t, ufrag, pwd, fpB64, epsStr] = decoded.split("|");
+      const type = t === "o" ? "offer" : "answer";
+      const setup = type === "offer" ? "actpass" : "active";
+      const fpHex = b64UrlToHex(fpB64);
+
+      const candLines = (epsStr || "")
+        .split(",")
+        .filter(Boolean)
+        .map((ep, idx) => {
+          const [ip, port] = ep.split(":");
+          return `a=candidate:${idx + 1} 1 udp 2122260223 ${ip} ${port} typ host`;
+        })
+        .join("\r\n");
+
+      const sdp = [
+        "v=0",
+        "o=- 0 2 IN IP4 127.0.0.1",
+        "s=-",
+        "t=0 0",
+        "a=group:BUNDLE 0",
+        "a=msid-semantic: WMS",
+        "m=application 9 UDP/DTLS/SCTP webrtc-datachannel",
+        "c=IN IP4 0.0.0.0",
+        `a=ice-ufrag:${ufrag}`,
+        `a=ice-pwd:${pwd}`,
+        `a=fingerprint:sha-256 ${fpHex}`,
+        `a=setup:${setup}`,
+        "a=mid:0",
+        "a=sctp-port:5000",
+        candLines,
+        ""
+      ].join("\r\n");
+
+      return { type, sdp };
+    }
+
+    function drawQROnCanvas(text) {
+      if (typeof qrcode === "undefined") return;
+      const qr = qrcode(0, "L");
+      qr.addData(text);
+      qr.make();
+
+      const count = qr.getModuleCount();
+      const size = 240;
+      const margin = 12;
+      const cellSize = (size - margin * 2) / count;
+
+      qrCanvas.width = size;
+      qrCanvas.height = size;
+      const ctx = qrCanvas.getContext("2d");
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = "#111111";
+
+      for (let r = 0; r < count; r++) {
+        for (let c = 0; c < count; c++) {
+          if (qr.isDark(r, c)) {
+            ctx.fillRect(
+              Math.floor(margin + c * cellSize),
+              Math.floor(margin + r * cellSize),
+              Math.ceil(cellSize),
+              Math.ceil(cellSize)
+            );
+          }
+        }
+      }
+    }
+
+    function showQR(shortCode, text, showStep3Btn) {
+      qrArea.style.display = "flex";
+      qrInstruction.textContent = text;
+      scanAnswerBtn.style.display = showStep3Btn ? "inline-flex" : "none";
+      manualCodeOut.value = shortCode;
+      shareLinkBtn.style.display = navigator.share ? "inline-flex" : "none";
+      drawQROnCanvas(shortCode);
+    }
+
+    document.getElementById("copyCodeBtn").onclick = () => {
+      navigator.clipboard.writeText(manualCodeOut.value);
+      const btn = document.getElementById("copyCodeBtn");
+      btn.textContent = "Copiado";
+      setTimeout(() => (btn.textContent = "Copiar"), 1400);
+    };
+
+    shareLinkBtn.onclick = () => {
+      if (navigator.share) {
+        navigator.share({ text: manualCodeOut.value }).catch(() => {});
+      }
+    };
+
+    document.getElementById("createOfferBtn").onclick = async () => {
+      try {
+        stopCamera();
+        initPeerConnection(false);
+        dataChannel = pc.createDataChannel("bento-p2p", { ordered: true });
+        setupDataChannel(dataChannel);
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        connStatus.textContent = "Generando...";
+        await waitForIceGathering(pc, 1800);
+
+        const packed = packSignal(pc.localDescription);
+        connStatus.textContent = "Esperando respuesta";
+        showQR(
+          packed,
+          `Escanea este QR con el otro dispositivo (o envía el código de ${packed.length} caracteres):`,
+          true
+        );
+      } catch (e) {
+        alert("Error creando la sala: " + e.message);
+      }
+    };
+
+    document.getElementById("scanOfferBtn").onclick = () => startCamera();
+    scanAnswerBtn.onclick = () => startCamera();
+
+    async function handleScannedPayload(rawText) {
+      try {
+        const desc = unpackSignal(rawText);
+        if (desc.type === "offer") {
+          initPeerConnection(false);
+          pc.ondatachannel = (e) => {
+            dataChannel = e.channel;
+            setupDataChannel(dataChannel);
+          };
+          await pc.setRemoteDescription(desc);
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          connStatus.textContent = "Generando respuesta...";
+          await waitForIceGathering(pc, 1800);
+
+          const packedAnswer = packSignal(pc.localDescription);
+          showQR(
+            packedAnswer,
+            `Muestra este QR a la cámara del Dispositivo A o pégale este código corto (${packedAnswer.length} car.):`,
+            false
+          );
+        } else if (desc.type === "answer" && pc) {
+          await pc.setRemoteDescription(desc);
+          connStatus.textContent = "Enlazando...";
+        }
+      } catch (err) {
+        alert("Código no válido o incompleto. Asegúrate de copiarlo entero.");
+      }
+    }
+
+    document.getElementById("applyManualBtn").onclick = () => {
+      const val = document.getElementById("manualCodeIn").value;
+      if (val.trim()) handleScannedPayload(val);
+    };
+
+    async function startCamera() {
+      const wrap = document.getElementById("scannerWrap");
+      const video = document.getElementById("camVideo");
+      const tempCanvas = document.createElement("canvas");
+      const tempCtx = tempCanvas.getContext("2d", { willReadFrequently: true });
+
+      try {
+        scanStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" }
+        });
+        video.srcObject = scanStream;
+        await video.play();
+        wrap.classList.add("active");
+
+        const tick = () => {
+          if (!scanStream) return;
+          if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            tempCanvas.width = video.videoWidth;
+            tempCanvas.height = video.videoHeight;
+            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+            const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+            if (window.jsQR) {
+              const code = jsQR(imgData.data, imgData.width, imgData.height);
+              if (code && code.data) {
+                stopCamera();
+                handleScannedPayload(code.data);
+                return;
+              }
+            }
+          }
+          scanAnimId = requestAnimationFrame(tick);
+        };
+        scanAnimId = requestAnimationFrame(tick);
+      } catch (e) {
+        alert("No se detectó cámara. Usa el campo de código corto justo debajo.");
+      }
+    }
+
+    function stopCamera() {
+      if (scanAnimId) cancelAnimationFrame(scanAnimId);
+      if (scanStream) {
+        scanStream.getTracks().forEach((t) => t.stop());
+        scanStream = null;
+      }
+      document.getElementById("scannerWrap").classList.remove("active");
+    }
+
+    document.getElementById("stopScanBtn").onclick = stopCamera;
+
+    // =========================================================================
+    // TÚNEL P2P ACTIVO (ENVÍO Y RECEPCIÓN DE TEXTOS, MÚLTIPLES ARCHIVOS Y SYNC)
+    // =========================================================================
+    function onTunnelReady() {
+      stopCamera();
+      cleanupMqtt();
+      connStatus.textContent = "Conectado P2P";
+      connStatus.classList.add("connected");
+      modeTabs.style.display = "none";
+      pinCard.style.display = "none";
+      offlineCard.style.display = "none";
+      transferZone.classList.add("active");
+    }
+
+    // Sincronización de portapapeles en vivo
+    document.getElementById("liveClipToggle").onchange = async (e) => {
+      if (e.target.checked) {
+        try {
+          lastClipText = await navigator.clipboard.readText();
+        } catch (err) {}
+
+        clipInterval = setInterval(async () => {
+          if (!document.hasFocus() || !dataChannel || dataChannel.readyState !== "open") return;
+          try {
+            const currentText = await navigator.clipboard.readText();
+            if (currentText && currentText.trim() && currentText !== lastClipText) {
+              lastClipText = currentText;
+              dataChannel.send(JSON.stringify({ kind: "text", text: currentText }));
+              addFeedItem("Sync Portapapeles →", currentText, null, null);
+            }
+          } catch (err) {}
+        }, 1500);
+      } else {
+        clearInterval(clipInterval);
+        clipInterval = null;
+      }
+    };
+
+    function setupDataChannel(dc) {
+      dc.binaryType = "arraybuffer";
+      dc.onopen = () => onTunnelReady();
+
+      dc.onmessage = (e) => {
+        if (typeof e.data === "string") {
+          const msg = JSON.parse(e.data);
+          if (msg.kind === "text") {
+            lastClipText = msg.text;
+            addFeedItem("Recibido · Texto", msg.text, null, null);
+          } else if (msg.kind === "file-start") {
+            incomingFile = {
+              name: msg.name,
+              type: msg.type,
+              size: msg.size,
+              received: 0,
+              chunks: []
+            };
+            updateProgress(0, `Recibiendo ${msg.name}...`);
+          } else if (msg.kind === "file-end" && incomingFile) {
+            const blob = new Blob(incomingFile.chunks, { type: incomingFile.type });
+            const url = URL.createObjectURL(blob);
+            const isImage = incomingFile.type.startsWith("image/");
+            addFeedItem(
+              `Recibido · ${formatBytes(incomingFile.size)}`,
+              incomingFile.name,
+              url,
+              isImage ? blob : null
+            );
+            updateProgress(100, `Archivo recibido: ${incomingFile.name}`);
+            incomingFile = null;
+          }
+        } else if (e.data instanceof ArrayBuffer && incomingFile) {
+          incomingFile.chunks.push(e.data);
+          incomingFile.received += e.data.byteLength;
+          const pct = Math.min(100, Math.round((incomingFile.received / incomingFile.size) * 100));
+          updateProgress(pct, `Recibiendo ${incomingFile.name} (${pct}%)`);
+        }
+      };
+    }
+
+    document.getElementById("sendTextBtn").onclick = () => {
+      const input = document.getElementById("msgInput");
+      const text = input.value.trim();
+      if (!text || !dataChannel || dataChannel.readyState !== "open") return;
+      lastClipText = text;
+      dataChannel.send(JSON.stringify({ kind: "text", text }));
+      addFeedItem("Enviado · Texto", text, null, null);
+      input.value = "";
+    };
+
+    // Envío de múltiples archivos en cola secuencial
+    document.getElementById("fileInput").onchange = async (e) => {
+      const files = Array.from(e.target.files);
+      if (!files.length || !dataChannel || dataChannel.readyState !== "open") return;
+
+      const CHUNK_SIZE = 16384;
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        dataChannel.send(JSON.stringify({
+          kind: "file-start",
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size
+        }));
+
+        const buffer = await file.arrayBuffer();
+        let offset = 0;
+
+        while (offset < buffer.byteLength) {
+          while (dataChannel.bufferedAmount > 262144) {
+            await new Promise((r) => setTimeout(r, 20));
+          }
+          const slice = buffer.slice(offset, offset + CHUNK_SIZE);
+          dataChannel.send(slice);
+          offset += CHUNK_SIZE;
+          const pct = Math.min(100, Math.round((offset / buffer.byteLength) * 100));
+          updateProgress(pct, `Enviando (${i + 1}/${files.length}) ${file.name} (${pct}%)`);
+        }
+
+        dataChannel.send(JSON.stringify({ kind: "file-end" }));
+        addFeedItem(`Enviado · ${formatBytes(file.size)}`, file.name, null, null);
+      }
+
+      e.target.value = "";
+    };
+
+    function updateProgress(pct, label) {
+      const bar = document.getElementById("progressBar");
+      const fill = document.getElementById("progressFill");
+      const meta = document.getElementById("transferMeta");
+      bar.style.display = "block";
+      fill.style.width = pct + "%";
+      meta.textContent = label;
+    }
+
+    // Copiar imagen recibida directamente al portapapeles como PNG
+    async function copyImageBlobToClipboard(blob, btn) {
+      try {
+        const bmp = await createImageBitmap(blob);
+        const canvas = document.createElement("canvas");
+        canvas.width = bmp.width;
+        canvas.height = bmp.height;
+        canvas.getContext("2d").drawImage(bmp, 0, 0);
+        const pngBlob = await new Promise((res) => canvas.toBlob(res, "image/png"));
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": pngBlob })]);
+        btn.textContent = "Copiada";
+        setTimeout(() => (btn.textContent = "Copiar Img"), 1500);
+      } catch (err) {
+        alert("Tu navegador no permite copiar imágenes directamente. Usa Descargar.");
+      }
+    }
+
+    function addFeedItem(tag, content, downloadUrl, imageBlob) {
+      const list = document.getElementById("feedList");
+      const div = document.createElement("div");
+      div.className = "feed-item";
+      div.innerHTML = `
+        <div style="flex:1; min-width:200px;">
+          <div class="feed-meta">${tag}</div>
+          <div class="feed-text">${escapeHtml(content)}</div>
+          ${imageBlob && downloadUrl ? `<img class="feed-thumb" src="${downloadUrl}" alt="Vista previa" />` : ""}
+        </div>
+        <div class="btn-row">
+          ${imageBlob ? `<button type="button" class="btn" data-copy-img="1">Copiar Img</button>` : ""}
+          ${downloadUrl
+            ? `<a class="btn btn-accent" href="${downloadUrl}" download="${escapeHtml(content)}">Descargar</a>`
+            : `<button type="button" class="btn" data-copy="1">Copiar</button>`}
+        </div>
+      `;
+      const copyBtn = div.querySelector("[data-copy]");
+      if (copyBtn) {
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(content);
+          copyBtn.textContent = "Copiado";
+          setTimeout(() => (copyBtn.textContent = "Copiar"), 1400);
+        };
+      }
+      const copyImgBtn = div.querySelector("[data-copy-img]");
+      if (copyImgBtn && imageBlob) {
+        copyImgBtn.onclick = () => copyImageBlobToClipboard(imageBlob, copyImgBtn);
+      }
+      list.prepend(div);
+    }
+
+    function formatBytes(b) {
+      if (b < 1024) return b + " B";
+      if (b < 1048576) return (b / 1024).toFixed(1) + " KB";
+      return (b / 1048576).toFixed(1) + " MB";
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, (m) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[m]));
+    }
+
+    document.getElementById("disconnectBtn").onclick = () => {
+      if (clipInterval) clearInterval(clipInterval);
+      cleanupMqtt();
+      if (pc) pc.close();
+      location.reload();
+    };
+
+    window.addEventListener("load", () => {
+      if (location.hash.startsWith("#c=")) {
+        document.querySelector('[data-mode="offline"]').click();
+        handleScannedPayload(location.hash);
+      }
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      }
+    });
+  </script>
+</body>
+</html>

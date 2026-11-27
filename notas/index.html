@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f5f5f3" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <title>Bento Notas</title>
+  <style>
+    :root {
+      --bg: #f5f5f3;
+      --surface: #ffffff;
+      --ink: #111111;
+      --muted: #5e5e5a;
+      --border: #dcdcd6;
+      --accent: #d9381e;
+      --accent-hover: #b82d16;
+      --ok: #1b7a3d;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Inter", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 780px;
+      padding: 20px 14px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .brand h1 span { color: var(--accent); }
+
+    .brand p {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--ink);
+      background: var(--surface);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      padding: 11px 6px;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      color: var(--ink);
+    }
+
+    .tab-btn + .tab-btn { border-left: 1px solid var(--ink); }
+    .tab-btn.active { background: var(--ink); color: var(--surface); }
+
+    .panel { display: none; flex-direction: column; gap: 14px; }
+    .panel.active { display: flex; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    textarea.scratchpad {
+      width: 100%;
+      min-height: 210px;
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      line-height: 1.55;
+      color: var(--ink);
+      resize: vertical;
+      outline: none;
+    }
+
+    textarea.scratchpad:focus {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+
+    .bar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .meta-txt {
+      font-family: var(--mono);
+      font-size: 0.66rem;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .btn-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      color: var(--ink);
+      padding: 8px 12px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn:hover { background: var(--ink); color: var(--surface); }
+
+    .btn-accent {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-accent:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    .pinned-list, .contact-list, .check-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .pinned-item {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .pinned-body {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+      flex: 1;
+    }
+
+    .pinned-date {
+      font-size: 0.62rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 8px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field label {
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 9px 10px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--ink);
+      outline: none;
+    }
+
+    .input:focus {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+
+    .contact-card {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .contact-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .contact-name {
+      font-weight: 800;
+      font-size: 0.96rem;
+      text-transform: uppercase;
+    }
+
+    .contact-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .data-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      font-family: var(--mono);
+      font-size: 0.74rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    .data-chip:hover { border-color: var(--accent); }
+    .data-chip strong { color: var(--accent); font-size: 0.64rem; text-transform: uppercase; }
+
+    /* Estilos de Listas / Checklists */
+    .check-row {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .check-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      user-select: none;
+    }
+
+    .check-label input {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .check-row.done .check-text {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 6px;
+      background: var(--border);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.2s;
+    }
+
+    .mini-btn {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 4px 8px;
+      font-family: var(--mono);
+      font-size: 0.64rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .mini-btn:hover { background: var(--ink); color: var(--surface); }
+    .mini-btn.del:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--ink);
+      color: var(--surface);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      padding: 8px 14px;
+      border: 1px solid var(--accent);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s;
+      z-index: 50;
+    }
+
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1><span>BENTO</span> NOTAS</h1>
+        <p>Apuntes · Fichas DNI/Tel · Listas reutilizables en local</p>
+      </div>
+      <button type="button" class="btn" id="privacyToggleBtn">Discreto: OFF</button>
+    </header>
+
+    <nav class="tabs">
+      <button type="button" class="tab-btn active" data-tab="notesPanel">01 · Apunte</button>
+      <button type="button" class="tab-btn" data-tab="contactsPanel">02 · Fichas</button>
+      <button type="button" class="tab-btn" data-tab="listsPanel">03 · Listas</button>
+    </nav>
+
+    <!-- PANEL 1: APUNTE RÁPIDO -->
+    <section class="panel active" id="notesPanel">
+      <div class="card">
+        <textarea id="scratchpad" class="scratchpad" placeholder="Escribe aquí cualquier cosa al vuelo... Se guarda automáticamente en este dispositivo."></textarea>
+        <div class="bar-row">
+          <span class="meta-txt" id="charCounter">0 caracteres · Guardado</span>
+          <div class="btn-row">
+            <button type="button" class="btn" id="clearPadBtn">Limpiar</button>
+            <button type="button" class="btn" id="copyPadBtn">Copiar</button>
+            <button type="button" class="btn btn-accent" id="pinNoteBtn">Fijar abajo ↓</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bar-row">
+        <span class="meta-txt">Notas fijadas (<span id="pinnedCount">0</span>)</span>
+        <button type="button" class="mini-btn" id="exportTxtBtn">Descargar .TXT</button>
+      </div>
+
+      <div class="pinned-list" id="pinnedList"></div>
+    </section>
+
+    <!-- PANEL 2: FICHAS DE USUARIOS (NOMBRE, DNI, TELÉFONO) -->
+    <section class="panel" id="contactsPanel">
+      <div class="card">
+        <div class="form-grid">
+          <div class="field">
+            <label for="cName">Nombre / Usuario</label>
+            <input type="text" id="cName" class="input" placeholder="Ej. Jon García" />
+          </div>
+          <div class="field">
+            <label for="cDni">DNI / NIE / ID</label>
+            <input type="text" id="cDni" class="input" placeholder="12345678Z" />
+          </div>
+          <div class="field">
+            <label for="cPhone">Teléfono</label>
+            <input type="tel" id="cPhone" class="input" placeholder="600 123 456" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="cNote">Detalle rápido (opcional)</label>
+          <input type="text" id="cNote" class="input" placeholder="Grupo, empresa, matrícula, observación..." />
+        </div>
+        <button type="button" class="btn btn-accent" id="addContactBtn">Guardar Ficha</button>
+      </div>
+
+      <div class="bar-row">
+        <input type="search" id="searchContactInput" class="input" style="max-width:320px;" placeholder="Buscar por nombre, DNI o teléfono..." />
+        <span class="meta-txt">Fichas: <strong id="contactCount">0</strong></span>
+      </div>
+
+      <div class="contact-list" id="contactList"></div>
+    </section>
+
+    <!-- PANEL 3: LISTAS / CHECKLISTS -->
+    <section class="panel" id="listsPanel">
+      <div class="card">
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="newCheckInput" class="input" placeholder="Añadir elemento a la lista (Pulsa Enter)..." />
+          <button type="button" class="btn btn-accent" id="addCheckBtn">Añadir</button>
+        </div>
+
+        <div class="bar-row">
+          <span class="meta-txt" id="listProgressTxt">0 de 0 completados</span>
+          <div class="btn-row">
+            <button type="button" class="mini-btn" id="uncheckAllBtn">Desmarcar todo</button>
+            <button type="button" class="mini-btn del" id="clearDoneBtn">Borrar marcados</button>
+          </div>
+        </div>
+
+        <div class="progress-track">
+          <div class="progress-fill" id="listProgressFill"></div>
+        </div>
+      </div>
+
+      <div class="check-list" id="checkList"></div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast">Copiado</div>
+
+  <script>
+    const PAD_KEY = "bento_notas_pad_v1";
+    const PINNED_KEY = "bento_notas_pinned_v1";
+    const CONTACTS_KEY = "bento_notas_contacts_v1";
+    const CHECKS_KEY = "bento_notas_checks_v1";
+
+    let privacyMode = false;
+    let pinnedNotes = JSON.parse(localStorage.getItem(PINNED_KEY) || "[]");
+    let contacts = JSON.parse(localStorage.getItem(CONTACTS_KEY) || "[]");
+    let checkItems = JSON.parse(localStorage.getItem(CHECKS_KEY) || "[]");
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove("show"), 1800);
+    }
+
+    async function copyText(txt, label = "Copiado") {
+      try {
+        await navigator.clipboard.writeText(txt);
+        showToast(label);
+      } catch (e) {
+        showToast("No se pudo copiar");
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[m]));
+    }
+
+    function maskSensitive(val) {
+      if (!privacyMode || !val) return val;
+      if (val.length <= 3) return "***";
+      return "••••" + val.slice(-3);
+    }
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    const privacyBtn = document.getElementById("privacyToggleBtn");
+    privacyBtn.onclick = () => {
+      privacyMode = !privacyMode;
+      privacyBtn.textContent = privacyMode ? "Discreto: ON" : "Discreto: OFF";
+      privacyBtn.style.borderColor = privacyMode ? "var(--accent)" : "var(--ink)";
+      privacyBtn.style.color = privacyMode ? "var(--accent)" : "var(--ink)";
+      renderContacts();
+    };
+
+    // ================= APUNTE RÁPIDO =================
+    const scratchpad = document.getElementById("scratchpad");
+    const charCounter = document.getElementById("charCounter");
+
+    scratchpad.value = localStorage.getItem(PAD_KEY) || "";
+    updateCharCount();
+
+    function updateCharCount() {
+      charCounter.textContent = `${scratchpad.value.length} caracteres · Guardado`;
+    }
+
+    scratchpad.addEventListener("input", () => {
+      localStorage.setItem(PAD_KEY, scratchpad.value);
+      updateCharCount();
+    });
+
+    document.getElementById("copyPadBtn").onclick = () => {
+      if (scratchpad.value.trim()) copyText(scratchpad.value, "Apunte copiado");
+    };
+
+    document.getElementById("clearPadBtn").onclick = () => {
+      if (!scratchpad.value) return;
+      if (confirm("¿Vaciar el cuadro de apunte rápido?")) {
+        scratchpad.value = "";
+        localStorage.setItem(PAD_KEY, "");
+        updateCharCount();
+      }
+    };
+
+    document.getElementById("pinNoteBtn").onclick = () => {
+      const text = scratchpad.value.trim();
+      if (!text) return showToast("Escribe algo antes de fijar");
+      pinnedNotes.unshift({
+        id: Date.now(),
+        text,
+        date: new Date().toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+      });
+      localStorage.setItem(PINNED_KEY, JSON.stringify(pinnedNotes));
+      scratchpad.value = "";
+      localStorage.setItem(PAD_KEY, "");
+      updateCharCount();
+      renderPinned();
+      showToast("Nota fijada");
+    };
+
+    function renderPinned() {
+      const list = document.getElementById("pinnedList");
+      document.getElementById("pinnedCount").textContent = pinnedNotes.length;
+      list.innerHTML = "";
+
+      pinnedNotes.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "pinned-item";
+        div.innerHTML = `
+          <div class="pinned-body">${escapeHtml(item.text)}<div class="pinned-date">${item.date}</div></div>
+          <div class="btn-row">
+            <button type="button" class="mini-btn" data-act="copy">Copiar</button>
+            <button type="button" class="mini-btn del" data-act="del">✕</button>
+          </div>
+        `;
+        div.querySelector('[data-act="copy"]').onclick = () => copyText(item.text, "Nota copiada");
+        div.querySelector('[data-act="del"]').onclick = () => {
+          pinnedNotes = pinnedNotes.filter(n => n.id !== item.id);
+          localStorage.setItem(PINNED_KEY, JSON.stringify(pinnedNotes));
+          renderPinned();
+        };
+        list.appendChild(div);
+      });
+    }
+
+    document.getElementById("exportTxtBtn").onclick = () => {
+      const lines = [];
+      if (scratchpad.value.trim()) lines.push("=== APUNTE ACTUAL ===\n" + scratchpad.value.trim());
+      if (pinnedNotes.length) {
+        lines.push("=== NOTAS FIJADAS ===\n" + pinnedNotes.map(n => `[${n.date}]\n${n.text}`).join("\n\n---\n\n"));
+      }
+      if (!lines.length) return showToast("No hay notas para exportar");
+      const blob = new Blob([lines.join("\n\n")], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "Bento-Notas.txt";
+      a.click();
+    };
+
+    // ================= FICHAS =================
+    document.getElementById("addContactBtn").onclick = () => {
+      const name = document.getElementById("cName").value.trim();
+      const dni = document.getElementById("cDni").value.trim().toUpperCase();
+      const phone = document.getElementById("cPhone").value.trim();
+      const note = document.getElementById("cNote").value.trim();
+
+      if (!name && !dni && !phone) return showToast("Rellena al menos un dato");
+
+      contacts.unshift({ id: Date.now(), name: name || "Sin nombre", dni, phone, note });
+      localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts));
+
+      document.getElementById("cName").value = "";
+      document.getElementById("cDni").value = "";
+      document.getElementById("cPhone").value = "";
+      document.getElementById("cNote").value = "";
+      renderContacts();
+      showToast("Ficha guardada");
+    };
+
+    document.getElementById("searchContactInput").oninput = renderContacts;
+
+    function renderContacts() {
+      const list = document.getElementById("contactList");
+      const q = document.getElementById("searchContactInput").value.trim().toLowerCase();
+      const filtered = contacts.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        (c.dni && c.dni.toLowerCase().includes(q)) ||
+        (c.phone && c.phone.toLowerCase().includes(q)) ||
+        (c.note && c.note.toLowerCase().includes(q))
+      );
+
+      document.getElementById("contactCount").textContent = contacts.length;
+      list.innerHTML = "";
+
+      if (!filtered.length) {
+        list.innerHTML = `<div class="meta-txt" style="text-align:center; padding:16px; border:1px dashed var(--border);">No hay fichas guardadas.</div>`;
+        return;
+      }
+
+      filtered.forEach(c => {
+        const card = document.createElement("div");
+        card.className = "contact-card";
+        card.innerHTML = `
+          <div class="contact-top">
+            <span class="contact-name">${escapeHtml(c.name)}</span>
+            <div class="btn-row">
+              <button type="button" class="mini-btn" data-act="copyAll">Copiar ficha</button>
+              <button type="button" class="mini-btn del" data-act="del">✕</button>
+            </div>
+          </div>
+          <div class="contact-pills">
+            ${c.dni ? `<button type="button" class="data-chip" data-act="copyDni"><strong>DNI</strong> <span>${escapeHtml(maskSensitive(c.dni))}</span></button>` : ""}
+            ${c.phone ? `<button type="button" class="data-chip" data-act="copyPhone"><strong>TEL</strong> <span>${escapeHtml(maskSensitive(c.phone))}</span></button>` : ""}
+            ${c.note ? `<span class="data-chip" style="cursor:default;"><strong>NOTA</strong> <span>${escapeHtml(c.note)}</span></span>` : ""}
+          </div>
+        `;
+
+        if (c.dni) card.querySelector('[data-act="copyDni"]').onclick = () => copyText(c.dni, "DNI copiado");
+        if (c.phone) card.querySelector('[data-act="copyPhone"]').onclick = () => copyText(c.phone, "Teléfono copiado");
+        card.querySelector('[data-act="copyAll"]').onclick = () => {
+          const full = [c.name, c.dni && `DNI: ${c.dni}`, c.phone && `Tel: ${c.phone}`, c.note].filter(Boolean).join(" | ");
+          copyText(full, "Ficha completa copiada");
+        };
+        card.querySelector('[data-act="del"]').onclick = () => {
+          if (confirm(`¿Borrar la ficha de "${c.name}"?`)) {
+            contacts = contacts.filter(x => x.id !== c.id);
+            localStorage.setItem(CONTACTS_KEY, JSON.stringify(contacts));
+            renderContacts();
+          }
+        };
+        list.appendChild(card);
+      });
+    }
+
+    // ================= LISTAS / CHECKLISTS =================
+    const newCheckInput = document.getElementById("newCheckInput");
+
+    function addCheckItem() {
+      const text = newCheckInput.value.trim();
+      if (!text) return;
+      checkItems.push({ id: Date.now(), text, done: false });
+      localStorage.setItem(CHECKS_KEY, JSON.stringify(checkItems));
+      newCheckInput.value = "";
+      renderChecks();
+    }
+
+    document.getElementById("addCheckBtn").onclick = addCheckItem;
+    newCheckInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") addCheckItem();
+    });
+
+    document.getElementById("uncheckAllBtn").onclick = () => {
+      checkItems.forEach(item => (item.done = false));
+      localStorage.setItem(CHECKS_KEY, JSON.stringify(checkItems));
+      renderChecks();
+      showToast("Lista reiniciada");
+    };
+
+    document.getElementById("clearDoneBtn").onclick = () => {
+      checkItems = checkItems.filter(item => !item.done);
+      localStorage.setItem(CHECKS_KEY, JSON.stringify(checkItems));
+      renderChecks();
+    };
+
+    function renderChecks() {
+      const list = document.getElementById("checkList");
+      const total = checkItems.length;
+      const doneCount = checkItems.filter(i => i.done).length;
+      const pct = total ? Math.round((doneCount / total) * 100) : 0;
+
+      document.getElementById("listProgressTxt").textContent = `${doneCount} de ${total} completados`;
+      document.getElementById("listProgressFill").style.width = pct + "%";
+      list.innerHTML = "";
+
+      if (!total) {
+        list.innerHTML = `<div class="meta-txt" style="text-align:center; padding:16px; border:1px dashed var(--border);">Lista vacía. Añade arriba tu primer elemento.</div>`;
+        return;
+      }
+
+      checkItems.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "check-row" + (item.done ? " done" : "");
+        row.innerHTML = `
+          <label class="check-label">
+            <input type="checkbox" ${item.done ? "checked" : ""} />
+            <span class="check-text">${escapeHtml(item.text)}</span>
+          </label>
+          <button type="button" class="mini-btn del">✕</button>
+        `;
+
+        row.querySelector("input").onchange = e => {
+          item.done = e.target.checked;
+          localStorage.setItem(CHECKS_KEY, JSON.stringify(checkItems));
+          renderChecks();
+        };
+
+        row.querySelector(".del").onclick = () => {
+          checkItems = checkItems.filter(x => x.id !== item.id);
+          localStorage.setItem(CHECKS_KEY, JSON.stringify(checkItems));
+          renderChecks();
+        };
+
+        list.appendChild(row);
+      });
+    }
+
+    renderPinned();
+    renderContacts();
+    renderChecks();
+    if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+  </script>
+</body>
+</html>

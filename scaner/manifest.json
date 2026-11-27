@@ -1,0 +1,17 @@
+{
+  "name": "Bento Scaner+",
+  "short_name": "Bento Scaner+",
+  "description": "Escáner inteligente de libros y documentos en local con detección automática y exportación PDF.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f5f5f3",
+  "theme_color": "#f5f5f3",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
