@@ -944,14 +944,30 @@
       currentType = "expense";
       document.getElementById("btnTypeExpense").className = "type-opt active-expense";
       document.getElementById("btnTypeIncome").className = "type-opt";
-      populateCategorySelects();
+      window.addEventListener("storage", (e) => {
+      if (e.key === "bentocount_tx_v1") {
+        transactions = JSON.parse(e.newValue || "[]");
+        renderAll();
+        notify("✓ Nuevo gasto recibido desde BentoNutri.");
+      }
+    });
+
+    populateCategorySelects();
     };
 
     document.getElementById("btnTypeIncome").onclick = () => {
       currentType = "income";
       document.getElementById("btnTypeIncome").className = "type-opt active-income";
       document.getElementById("btnTypeExpense").className = "type-opt";
-      populateCategorySelects();
+      window.addEventListener("storage", (e) => {
+      if (e.key === "bentocount_tx_v1") {
+        transactions = JSON.parse(e.newValue || "[]");
+        renderAll();
+        notify("✓ Nuevo gasto recibido desde BentoNutri.");
+      }
+    });
+
+    populateCategorySelects();
     };
 
     // Chips de suma rápida (+2€, +5€, +10€...)
@@ -1614,6 +1630,14 @@
       if (note) document.getElementById("txNote").value = note;
       if (cat && ALL_CAT_MAP[cat]) document.getElementById("txCategory").value = cat;
     }
+
+    window.addEventListener("storage", (e) => {
+      if (e.key === "bentocount_tx_v1") {
+        transactions = JSON.parse(e.newValue || "[]");
+        renderAll();
+        notify("✓ Nuevo gasto recibido desde BentoNutri.");
+      }
+    });
 
     populateCategorySelects();
     populateRecCategorySelect();
