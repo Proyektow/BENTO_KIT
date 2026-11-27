@@ -1352,8 +1352,7 @@
       if (trackPoints.length < 2) return;
       const trkpts = trackPoints
         .map((p) => `      <trkpt lat="${p.lat}" lon="${p.lng}"><ele>${p.alt}</ele><time>${p.time}</time></trkpt>`)
-        .join("
-");
+        .join("\n");
       const gpx = `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="BentoGPS" xmlns="http://www.topografix.com/GPX/1/1">
   <trk>
@@ -1476,8 +1475,7 @@ ${trkpts}
         "END:VALARM",
         "END:VEVENT",
         "END:VCALENDAR"
-      ].join("
-");
+      ].join("\r\n");
 
       const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -1558,10 +1556,7 @@ ${trkpts}
       const target = savedPins.find((p) => p.id === activePinId);
       if (!target) return;
       const utm = latLngToUtmString(target.lat, target.lng);
-      const txt = `UBICACIÓN BENTOGPS (${target.name})
-Coords: ${target.lat.toFixed(6)}, ${target.lng.toFixed(6)}
-${utm}
-Mapa: https://maps.google.com/?q=${target.lat.toFixed(6)},${target.lng.toFixed(6)}`;
+     const txt = `UBICACIÓN BENTOGPS (${target.name})\nCoords: ${target.lat.toFixed(6)}, ${target.lng.toFixed(6)}\n${utm}\nMapa: https://maps.google.com/?q=${target.lat.toFixed(6)},${target.lng.toFixed(6)}`;
       navigator.clipboard.writeText(txt);
       const btn = document.getElementById("btnCopyEmergency");
       btn.textContent = "Copiado";
