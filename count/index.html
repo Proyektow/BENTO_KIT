@@ -7,6 +7,7 @@
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
   <title>BentoCount · Control de Gastos, Metas y Evolución</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 
   <style>
     :root {
@@ -604,7 +605,14 @@
     <!-- ===================================================================== -->
     <section class="panel active" id="tab-movs">
       <div class="card">
-        <span class="section-tag">Nuevo apunte rápido (Soporta #etiquetas en concepto)</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span class="section-tag">Nuevo apunte rápido (Soporta #etiquetas en concepto)</span>
+          <label class="btn btn-ok" style="padding:6px 10px; font-size:0.62rem; cursor:pointer;">
+            📷 Foto Ticket (OCR)
+            <input type="file" id="countTicketPhotoInput" accept="image/*" capture="environment" hidden />
+          </label>
+        </div>
+        <div id="countOcrStatus" class="desc-text" style="display:none; color:var(--ink); font-weight:700;"></div>
         <div class="type-switch">
           <button type="button" class="type-opt active-expense" id="btnTypeExpense">− Gasto</button>
           <button type="button" class="type-opt" id="btnTypeIncome">+ Ingreso</button>
@@ -952,6 +960,79 @@
       }
     });
 
+    // Escáner OCR de Tickets directo en BentoCount
+    document.getElementById("countTicketPhotoInput").onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const statusEl = document.getElementById("countOcrStatus");
+      statusEl.style.display = "block";
+
+      if (!window.Tesseract) {
+        statusEl.textContent = "⚠ Motor OCR no disponible sin conexión la primera vez.";
+        return;
+      }
+
+      statusEl.textContent = "Leyendo importe y comercio del ticket...";
+      try {
+        const res = await Tesseract.recognize(file, "spa");
+        const raw = res.data.text || "";
+        const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+        let detectedTotal = null;
+        let maxVal = 0;
+
+        lines.forEach((line) => {
+          const matches = [...line.matchAll(/(\d{1,4}[.,]\d{2})\s*€?/g)];
+          if (!matches.length) return;
+          const val = parseFloat(matches[matches.length - 1][1].replace(",", "."));
+          if (isNaN(val) || val <= 0 || val > 9999) return;
+
+          if (/total|importe|pagar|tarjeta|efectivo|visa|mastercard/i.test(line)) {
+            if (/total|pagar|tarjeta/i.test(line) || detectedTotal === null) {
+              detectedTotal = val;
+            }
+          }
+          if (val > maxVal) maxVal = val;
+        });
+
+        const finalAmount = detectedTotal !== null ? detectedTotal : maxVal;
+
+        // Intentar sacar nombre de comercio de las primeras líneas limpias
+        const merchantLine = lines.find(
+          (l) => l.length >= 3 && !/^\d/.test(l) && !/nif|cif|factura|ticket|fecha|hora|tel|iva|total/i.test(l)
+        );
+        const cleanMerchant = merchantLine ? merchantLine.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.-]/g, "").trim().slice(0, 32) : "";
+
+        // Cambiar automáticamente a Gasto
+        document.getElementById("btnTypeExpense").click();
+
+        if (finalAmount > 0) {
+          document.getElementById("txAmount").value = finalAmount.toFixed(2);
+        }
+        if (cleanMerchant) {
+          document.getElementById("txNote").value = `${cleanMerchant} #ticket`;
+          // Autoseleccionar categoría probable
+          const low = raw.toLowerCase();
+          if (/(gasolin|repsol|cepsa|bp|shell|combustible|parking|ota|peaje)/.test(low)) {
+            document.getElementById("txCategory").value = "transporte";
+          } else if (/(farmacia|parafarmacia|clinica|gimnasio)/.test(low)) {
+            document.getElementById("txCategory").value = "salud";
+          } else if (/(bar|restaurante|cafe|cafeteria|cerveza|menu|cine)/.test(low)) {
+            document.getElementById("txCategory").value = "ocio";
+          } else if (/(mercadona|eroski|lidl|aldi|carrefour|dia|alcampo|super)/.test(low)) {
+            document.getElementById("txCategory").value = "comida";
+          }
+        }
+
+        statusEl.textContent = finalAmount > 0
+          ? `✓ Ticket leído: ${finalAmount.toFixed(2)} €${cleanMerchant ? " (" + cleanMerchant + ")" : ""}. Revisa y pulsa Guardar.`
+          : "No se detectó un importe claro. Escríbelo manualmente.";
+      } catch (err) {
+        statusEl.textContent = "Error al leer la foto del ticket. Prueba con más luz.";
+      }
+      e.target.value = "";
+    };
+
     populateCategorySelects();
     };
 
@@ -966,6 +1047,79 @@
         notify("✓ Nuevo gasto recibido desde BentoNutri.");
       }
     });
+
+    // Escáner OCR de Tickets directo en BentoCount
+    document.getElementById("countTicketPhotoInput").onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const statusEl = document.getElementById("countOcrStatus");
+      statusEl.style.display = "block";
+
+      if (!window.Tesseract) {
+        statusEl.textContent = "⚠ Motor OCR no disponible sin conexión la primera vez.";
+        return;
+      }
+
+      statusEl.textContent = "Leyendo importe y comercio del ticket...";
+      try {
+        const res = await Tesseract.recognize(file, "spa");
+        const raw = res.data.text || "";
+        const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+        let detectedTotal = null;
+        let maxVal = 0;
+
+        lines.forEach((line) => {
+          const matches = [...line.matchAll(/(\d{1,4}[.,]\d{2})\s*€?/g)];
+          if (!matches.length) return;
+          const val = parseFloat(matches[matches.length - 1][1].replace(",", "."));
+          if (isNaN(val) || val <= 0 || val > 9999) return;
+
+          if (/total|importe|pagar|tarjeta|efectivo|visa|mastercard/i.test(line)) {
+            if (/total|pagar|tarjeta/i.test(line) || detectedTotal === null) {
+              detectedTotal = val;
+            }
+          }
+          if (val > maxVal) maxVal = val;
+        });
+
+        const finalAmount = detectedTotal !== null ? detectedTotal : maxVal;
+
+        // Intentar sacar nombre de comercio de las primeras líneas limpias
+        const merchantLine = lines.find(
+          (l) => l.length >= 3 && !/^\d/.test(l) && !/nif|cif|factura|ticket|fecha|hora|tel|iva|total/i.test(l)
+        );
+        const cleanMerchant = merchantLine ? merchantLine.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.-]/g, "").trim().slice(0, 32) : "";
+
+        // Cambiar automáticamente a Gasto
+        document.getElementById("btnTypeExpense").click();
+
+        if (finalAmount > 0) {
+          document.getElementById("txAmount").value = finalAmount.toFixed(2);
+        }
+        if (cleanMerchant) {
+          document.getElementById("txNote").value = `${cleanMerchant} #ticket`;
+          // Autoseleccionar categoría probable
+          const low = raw.toLowerCase();
+          if (/(gasolin|repsol|cepsa|bp|shell|combustible|parking|ota|peaje)/.test(low)) {
+            document.getElementById("txCategory").value = "transporte";
+          } else if (/(farmacia|parafarmacia|clinica|gimnasio)/.test(low)) {
+            document.getElementById("txCategory").value = "salud";
+          } else if (/(bar|restaurante|cafe|cafeteria|cerveza|menu|cine)/.test(low)) {
+            document.getElementById("txCategory").value = "ocio";
+          } else if (/(mercadona|eroski|lidl|aldi|carrefour|dia|alcampo|super)/.test(low)) {
+            document.getElementById("txCategory").value = "comida";
+          }
+        }
+
+        statusEl.textContent = finalAmount > 0
+          ? `✓ Ticket leído: ${finalAmount.toFixed(2)} €${cleanMerchant ? " (" + cleanMerchant + ")" : ""}. Revisa y pulsa Guardar.`
+          : "No se detectó un importe claro. Escríbelo manualmente.";
+      } catch (err) {
+        statusEl.textContent = "Error al leer la foto del ticket. Prueba con más luz.";
+      }
+      e.target.value = "";
+    };
 
     populateCategorySelects();
     };
@@ -1638,6 +1792,79 @@
         notify("✓ Nuevo gasto recibido desde BentoNutri.");
       }
     });
+
+    // Escáner OCR de Tickets directo en BentoCount
+    document.getElementById("countTicketPhotoInput").onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const statusEl = document.getElementById("countOcrStatus");
+      statusEl.style.display = "block";
+
+      if (!window.Tesseract) {
+        statusEl.textContent = "⚠ Motor OCR no disponible sin conexión la primera vez.";
+        return;
+      }
+
+      statusEl.textContent = "Leyendo importe y comercio del ticket...";
+      try {
+        const res = await Tesseract.recognize(file, "spa");
+        const raw = res.data.text || "";
+        const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+        let detectedTotal = null;
+        let maxVal = 0;
+
+        lines.forEach((line) => {
+          const matches = [...line.matchAll(/(\d{1,4}[.,]\d{2})\s*€?/g)];
+          if (!matches.length) return;
+          const val = parseFloat(matches[matches.length - 1][1].replace(",", "."));
+          if (isNaN(val) || val <= 0 || val > 9999) return;
+
+          if (/total|importe|pagar|tarjeta|efectivo|visa|mastercard/i.test(line)) {
+            if (/total|pagar|tarjeta/i.test(line) || detectedTotal === null) {
+              detectedTotal = val;
+            }
+          }
+          if (val > maxVal) maxVal = val;
+        });
+
+        const finalAmount = detectedTotal !== null ? detectedTotal : maxVal;
+
+        // Intentar sacar nombre de comercio de las primeras líneas limpias
+        const merchantLine = lines.find(
+          (l) => l.length >= 3 && !/^\d/.test(l) && !/nif|cif|factura|ticket|fecha|hora|tel|iva|total/i.test(l)
+        );
+        const cleanMerchant = merchantLine ? merchantLine.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s.-]/g, "").trim().slice(0, 32) : "";
+
+        // Cambiar automáticamente a Gasto
+        document.getElementById("btnTypeExpense").click();
+
+        if (finalAmount > 0) {
+          document.getElementById("txAmount").value = finalAmount.toFixed(2);
+        }
+        if (cleanMerchant) {
+          document.getElementById("txNote").value = `${cleanMerchant} #ticket`;
+          // Autoseleccionar categoría probable
+          const low = raw.toLowerCase();
+          if (/(gasolin|repsol|cepsa|bp|shell|combustible|parking|ota|peaje)/.test(low)) {
+            document.getElementById("txCategory").value = "transporte";
+          } else if (/(farmacia|parafarmacia|clinica|gimnasio)/.test(low)) {
+            document.getElementById("txCategory").value = "salud";
+          } else if (/(bar|restaurante|cafe|cafeteria|cerveza|menu|cine)/.test(low)) {
+            document.getElementById("txCategory").value = "ocio";
+          } else if (/(mercadona|eroski|lidl|aldi|carrefour|dia|alcampo|super)/.test(low)) {
+            document.getElementById("txCategory").value = "comida";
+          }
+        }
+
+        statusEl.textContent = finalAmount > 0
+          ? `✓ Ticket leído: ${finalAmount.toFixed(2)} €${cleanMerchant ? " (" + cleanMerchant + ")" : ""}. Revisa y pulsa Guardar.`
+          : "No se detectó un importe claro. Escríbelo manualmente.";
+      } catch (err) {
+        statusEl.textContent = "Error al leer la foto del ticket. Prueba con más luz.";
+      }
+      e.target.value = "";
+    };
 
     populateCategorySelects();
     populateRecCategorySelect();
