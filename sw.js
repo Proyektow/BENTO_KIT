@@ -1,4 +1,4 @@
-const CACHE_NAME = "bentokit-hub-v8";
+const CACHE_NAME = "bentokit-hub-v9";
 const MAP_TILE_CACHE = "bento-gps-tiles-v1";
 
 const HUB_ASSETS = [
@@ -43,7 +43,8 @@ const EXTERNAL_LIBS = [
   "https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js",
   "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css",
   "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js",
-  "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
+  "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js",
+  "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"
 ];
 
 self.addEventListener("install", (event) => {
