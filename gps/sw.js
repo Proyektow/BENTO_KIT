@@ -1,4 +1,4 @@
-const CACHE_NAME = "bento-gps-v3";
+const CACHE_NAME = "bento-gps-v4";
 const MAP_TILE_CACHE = "bento-gps-tiles-v1";
 
 const LOCAL_ASSETS = [
@@ -11,7 +11,9 @@ const LOCAL_ASSETS = [
 const CDN_LIBS = [
   "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css",
   "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js",
-  "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"
+  "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js",
+  "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css",
+"https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
 ];
 
 self.addEventListener("install", (event) => {
