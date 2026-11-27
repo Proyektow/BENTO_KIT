@@ -2167,10 +2167,8 @@
       parseTicketLines(raw);
     };
 
-    function parseTicketLines(raw) {
-      const lines = raw.split(/
-?
-/).map((l) => l.trim()).filter(Boolean);
+   function parseTicketLines(raw) {
+      const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
       const parsed = [];
       let detectedTotal = null;
 
