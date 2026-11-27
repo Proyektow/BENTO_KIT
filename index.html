@@ -416,7 +416,7 @@
 
     <!-- Aviso dinámico si el dispositivo pierde la conexión -->
     <div class="offline-banner" id="offlineBanner">
-      <strong>MODO SIN CONEXIÓN DETECTADO:</strong> Las herramientas marcadas con icono de Wi-Fi tachado funcionan 100 % en local si ya las abriste una vez. Las que usan GPS o motores externos requieren señal o primera carga con red.
+      <strong>MODO SIN CONEXIÓN DETECTADO:</strong> Las herramientas marcadas con icono de Wi-Fi tachado funcionan 100 % en local si ya las abriste una vez. Las que usan GPS, mapas o base de datos externa requieren señal o primera carga con red.
     </div>
 
     <!-- Menú de Apps -->
@@ -432,13 +432,13 @@
       </div>
       <div class="viewer-note" id="viewerNote"></div>
       <div class="frame-box">
-        <iframe id="appFrame" title="Herramienta BentoKit" allow="camera; microphone; geolocation; clipboard-write"></iframe>
+        <iframe id="appFrame" title="Herramienta BentoKit" allow="camera; microphone; geolocation; clipboard-read; clipboard-write"></iframe>
       </div>
     </section>
 
     <footer>
       <span><strong class="card-bento">BENTO</strong>KIT HUB · <span id="netStatusTxt">EN LÍNEA</span></span>
-      <span>Apps activas: <strong id="appCount">8</strong></span>
+      <span>Apps activas: <strong id="appCount">10</strong></span>
     </footer>
   </div>
 
@@ -452,7 +452,7 @@
 
       <div class="info-block">
         <p><strong>1. Cada herramienta es una app independiente:</strong> Puedes abrir cualquier módulo con <em>"Abrir completa ↗"</em> e instalarlo directamente en tu pantalla de inicio o escritorio (<strong>Compartir → Añadir a pantalla de inicio</strong> en móvil, o <strong>Instalar app</strong> en la barra del navegador) para entrar sin pasar por BentoKit.</p>
-        <p><strong>2. Privacidad local:</strong> Todos tus archivos, notas, audios y claves se procesan y guardan únicamente en tu dispositivo.</p>
+        <p><strong>2. Privacidad local:</strong> Todos tus archivos, cuentas, notas, audios y claves se procesan y guardan únicamente en tu dispositivo.</p>
       </div>
 
       <div class="info-block">
@@ -469,7 +469,7 @@
             <svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
             Señal / Red
           </span>
-          <span>Requiere señal GPS, mapas externos o primera descarga de motor.</span>
+          <span>Requiere señal GPS, mapas o consulta a base de datos externa.</span>
         </div>
       </div>
     </div>
@@ -484,7 +484,7 @@
         id: "bento-pdf",
         code: "01 · PDF",
         name: "BENTO PDF",
-        desc: "Unir, organizar, dividir, comprimir y convertir documentos PDF en local.",
+        desc: "Unir, extraer, Word ↔ PDF, firma visual, censura táctil y cifrado con clave en local.",
         url: "https://proyektow.github.io/BENTO-PDF/",
         offlineReady: true,
         offlineNote: ""
@@ -527,12 +527,12 @@
       },
       {
         id: "bento-gps",
-        code: "06 · RADAR & COCHE",
+        code: "06 · MAPA & RADAR",
         name: "Bento GPS",
-        desc: "Guarda dónde aparcas o puntos clave y vuelve con radar direccional y distancia.",
+        desc: "Mapa callejero offline, rutas GPX, altímetro, parquímetro OTA y radar direccional.",
         url: "https://proyektow.github.io/Bento_GPS/",
         offlineReady: false,
-        offlineNote: "Aviso: El radar direccional funciona sin datos usando satélites GPS, pero abrir el mapa externo requiere conexión."
+        offlineNote: "Aviso: El radar direccional y las zonas de mapa guardadas funcionan sin datos, pero descargar cuadrantes nuevos requiere red."
       },
       {
         id: "bento-voz",
@@ -547,10 +547,28 @@
         id: "bento-transfer",
         code: "08 · ENVÍO P2P",
         name: "Bento Transfer",
-        desc: "Pasa textos y archivos entre Android, iPhone y PC por Wi-Fi o Hotspot sin internet.",
+        desc: "Pasa textos, portapapeles en vivo y múltiples archivos entre móvil y PC sin nube.",
         url: "https://proyektow.github.io/Bento_Transfer/",
         offlineReady: true,
         offlineNote: ""
+      },
+      {
+        id: "bento-count",
+        code: "09 · FINANZAS",
+        name: "BentoCount",
+        desc: "Control de gastos e ingresos, tope mensual, regla 50/30/20, fijos y exportación CSV.",
+        url: "https://proyektow.github.io/Bento_Count/",
+        offlineReady: true,
+        offlineNote: ""
+      },
+      {
+        id: "bento-nutri",
+        code: "10 · SUPERMERCADO",
+        name: "BentoNutri",
+        desc: "Escáner de código de barras, semáforo de ingredientes y alternativas saludables por súper.",
+        url: "https://proyektow.github.io/Bento_Nutri/",
+        offlineReady: false,
+        offlineNote: "Aviso: Consultar productos nuevos requiere conexión a internet; tu historial escaneado sí funciona sin cobertura."
       }
     ];
 
