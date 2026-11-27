@@ -572,8 +572,8 @@
       }
     ];
 
-    function highlightBento(text) {
-      return text.replace(/\b(bento)\b/gi, '<span class="card-bento">$1</span>');
+   function highlightBento(text) {
+      return text.replace(/(bento)/gi, '<span class="card-bento">$1</span>');
     }
 
     const hubGrid = document.getElementById("hubGrid");
