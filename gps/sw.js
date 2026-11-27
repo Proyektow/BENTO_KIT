@@ -1,4 +1,4 @@
-const CACHE_NAME = "bento-gps-v4";
+const CACHE_NAME = "bento-gps-v5";
 const MAP_TILE_CACHE = "bento-gps-tiles-v1";
 
 const LOCAL_ASSETS = [
