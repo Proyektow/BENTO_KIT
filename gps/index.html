@@ -1475,7 +1475,7 @@ ${trkpts}
         "END:VALARM",
         "END:VEVENT",
         "END:VCALENDAR"
-      ].join("\r\n");
+      ].join("\n");
 
       const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -1556,7 +1556,7 @@ ${trkpts}
       const target = savedPins.find((p) => p.id === activePinId);
       if (!target) return;
       const utm = latLngToUtmString(target.lat, target.lng);
-     const txt = `UBICACIÓN BENTOGPS (${target.name})\nCoords: ${target.lat.toFixed(6)}, ${target.lng.toFixed(6)}\n${utm}\nMapa: https://maps.google.com/?q=${target.lat.toFixed(6)},${target.lng.toFixed(6)}`;
+      const txt = `UBICACIÓN BENTOGPS (${target.name})\nCoords: ${target.lat.toFixed(6)}, ${target.lng.toFixed(6)}\n${utm}\nMapa: https://maps.google.com/?q=${target.lat.toFixed(6)},${target.lng.toFixed(6)}`;
       navigator.clipboard.writeText(txt);
       const btn = document.getElementById("btnCopyEmergency");
       btn.textContent = "Copiado";
