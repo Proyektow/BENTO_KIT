@@ -1,4 +1,4 @@
-const CACHE_NAME = "bentokit-unified-v1";
+const CACHE_NAME = "bentokit-unified-v2";
 const MAP_TILE_CACHE = "bento-gps-tiles-v1";
 
 const HUB_ASSETS = [
@@ -66,7 +66,9 @@ const EXTERNAL_LIBS = [
   "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js",
   "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js",
   "https://docs.opencv.org/4.8.0/opencv.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+  "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+  "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css",
+"https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"
 ];
 
 self.addEventListener("install", (event) => {
