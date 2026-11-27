@@ -1,4 +1,4 @@
-const CACHE_NAME = "bentokit-hub-v11";
+const CACHE_NAME = "bentokit-unified-v1";
 const MAP_TILE_CACHE = "bento-gps-tiles-v1";
 
 const HUB_ASSETS = [
@@ -9,26 +9,46 @@ const HUB_ASSETS = [
 ];
 
 const SUB_APPS = [
-  "https://proyektow.github.io/BENTO-PDF/",
-  "https://proyektow.github.io/BENTO-PDF/index.html",
-  "https://proyektow.github.io/BentoFolio/",
-  "https://proyektow.github.io/BentoFolio/index.html",
-  "https://proyektow.github.io/Bento_Scanner-/",
-  "https://proyektow.github.io/Bento_Scanner-/index.html",
-  "https://proyektow.github.io/Bento_claves/",
-  "https://proyektow.github.io/Bento_claves/index.html",
-  "https://proyektow.github.io/Bento_Notas/",
-  "https://proyektow.github.io/Bento_Notas/index.html",
-  "https://proyektow.github.io/Bento_GPS/",
-  "https://proyektow.github.io/Bento_GPS/index.html",
-  "https://proyektow.github.io/Bento_Voz/",
-  "https://proyektow.github.io/Bento_Voz/index.html",
-  "https://proyektow.github.io/Bento_Transfer/",
-  "https://proyektow.github.io/Bento_Transfer/index.html",
-  "https://proyektow.github.io/Bento_Count/",
-  "https://proyektow.github.io/Bento_Count/index.html",
-  "https://proyektow.github.io/Bento_Nutri/",
-  "https://proyektow.github.io/Bento_Nutri/index.html"
+  "./pdf/",
+  "./pdf/index.html",
+  "./pdf/manifest.json",
+  "./pdf/icon.svg",
+  "./folio/",
+  "./folio/index.html",
+  "./folio/manifest.json",
+  "./folio/icon.svg",
+  "./scaner/",
+  "./scaner/index.html",
+  "./scaner/manifest.json",
+  "./scaner/icon.svg",
+  "./claves/",
+  "./claves/index.html",
+  "./claves/manifest.json",
+  "./claves/icon.svg",
+  "./notas/",
+  "./notas/index.html",
+  "./notas/manifest.json",
+  "./notas/icon.svg",
+  "./gps/",
+  "./gps/index.html",
+  "./gps/manifest.json",
+  "./gps/icon.svg",
+  "./voz/",
+  "./voz/index.html",
+  "./voz/manifest.json",
+  "./voz/icon.svg",
+  "./transfer/",
+  "./transfer/index.html",
+  "./transfer/manifest.json",
+  "./transfer/icon.svg",
+  "./count/",
+  "./count/index.html",
+  "./count/manifest.json",
+  "./count/icon.svg",
+  "./nutri/",
+  "./nutri/index.html",
+  "./nutri/manifest.json",
+  "./nutri/icon.svg"
 ];
 
 const EXTERNAL_LIBS = [
