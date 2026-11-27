@@ -1170,7 +1170,7 @@
       if (!qtyStr) return { amount: 500, unit: "g" };
       const clean = String(qtyStr).toLowerCase().replace(",", ".");
       // Detectar multipacks ej. "6 x 125 g" o "4x100g"
-      const multi = clean.match(/(\d+)\s*[x*]\s*(\d+(?:\.\d+)?)\s*(kg|g|gr|ml|cl|l) /);
+      const multi = clean.match(/(\d+)\s*[x*]\s*(\d+(?:\.\d+)?)\s*(kg|g|gr|ml|cl|l)\b/);
       if (multi) {
         const count = parseFloat(multi[1]);
         const val = parseFloat(multi[2]);
@@ -1179,7 +1179,7 @@
         if (unit === "cl") return { amount: count * val * 10, unit: "ml" };
         return { amount: count * val, unit };
       }
-      const single = clean.match(/(\d+(?:\.\d+)?)\s*(kg|g|gr|ml|cl|l|ud|uds) /);
+      const single = clean.match(/(\d+(?:\.\d+)?)\s*(kg|g|gr|ml|cl|l|ud|uds)\b/);
       if (single) {
         const val = parseFloat(single[1]);
         let unit = single[2];
@@ -1455,16 +1455,52 @@
     // =========================================================================
     document.getElementById("btnStartScan").onclick = async () => {
       const box = document.getElementById("scannerBox");
+      const video = document.getElementById("nativeVideo");
+      const readerDiv = document.getElementById("html5Reader");
       box.classList.add("active");
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        stopScanner();
+        notify("Tu navegador bloquea la cámara (requiere HTTPS o permisos).");
+        return;
+      }
+
+      if (window.Html5Qrcode) {
+        video.style.display = "none";
+        readerDiv.style.display = "block";
+        try {
+          if (html5Scanner) {
+            await html5Scanner.stop().catch(() => {});
+            html5Scanner.clear();
+          }
+          html5Scanner = new Html5Qrcode("html5Reader");
+          await html5Scanner.start(
+            { facingMode: "environment" },
+            { fps: 12, qrbox: { width: 250, height: 140 }, aspectRatio: 1.5 },
+            (decodedText) => {
+              stopScanner();
+              fetchProduct(decodedText);
+            },
+            () => {}
+          );
+          return;
+        } catch (err) {
+          console.warn("Html5Qrcode fallback:", err);
+        }
+      }
 
       if ("BarcodeDetector" in window) {
         try {
           const detector = new BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] });
-          const video = document.getElementById("nativeVideo");
-          document.getElementById("html5Reader").style.display = "none";
+          readerDiv.style.display = "none";
           video.style.display = "block";
+          video.setAttribute("playsinline", "true");
+          video.muted = true;
 
-          nativeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+          nativeStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } },
+            audio: false
+          });
           video.srcObject = nativeStream;
           await video.play();
 
@@ -1484,39 +1520,28 @@
           };
           nativeAnimId = requestAnimationFrame(tick);
           return;
-        } catch (err) {}
+        } catch (err) {
+          stopScanner();
+          notify("Permiso de cámara denegado o cámara ocupada por otra app.");
+          return;
+        }
       }
 
-      if (window.Html5Qrcode) {
-        document.getElementById("nativeVideo").style.display = "none";
-        document.getElementById("html5Reader").style.display = "block";
-        html5Scanner = new Html5Qrcode("html5Reader");
-        html5Scanner
-          .start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 260, height: 130 } },
-            (decodedText) => {
-              stopScanner();
-              fetchProduct(decodedText);
-            },
-            () => {}
-          )
-          .catch(() => {
-            stopScanner();
-            notify("No se pudo acceder a la cámara.");
-          });
-      } else {
-        stopScanner();
-        notify("Cámara no disponible.");
-      }
+      stopScanner();
+      notify("No se pudo iniciar la cámara. Revisa los permisos del sitio.");
     };
 
     function stopScanner() {
-      if (nativeAnimId) cancelAnimationFrame(nativeAnimId);
+      if (nativeAnimId) {
+        cancelAnimationFrame(nativeAnimId);
+        nativeAnimId = null;
+      }
       if (nativeStream) {
         nativeStream.getTracks().forEach((t) => t.stop());
         nativeStream = null;
       }
+      const video = document.getElementById("nativeVideo");
+      if (video) video.srcObject = null;
       if (html5Scanner) {
         html5Scanner.stop().then(() => html5Scanner.clear()).catch(() => {});
         html5Scanner = null;
@@ -2096,7 +2121,7 @@
         if (lower.includes(kw)) foundAlerts.push({ bad: true, text: `Ingrediente crítico detectado: ${kw.toUpperCase()}` });
       });
 
-      const eMatches = rawText.match(/ E-?\s?\d{3}[a-z]? /gi) || [];
+      const eMatches = rawText.match(/\bE-?\s?\d{3}[a-z]?\b/gi) || [];
       [...new Set(eMatches.map((m) => m.toUpperCase().replace(/[\s-]/g, "")))].forEach((code) => {
         const info = ADDITIVES_DB[code];
         if (info) {
