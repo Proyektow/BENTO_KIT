@@ -518,14 +518,14 @@
     const ICON_WIFI_OFF = `<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="2" y1="2" x2="22" y2="22"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M2 8.82a15 15 0 0 1 4.17-2.65"/><path d="M10.66 5c4.01-.36 8.14.9 11.34 3.76"/><path d="M16.85 11.25a10 10 0 0 1 2.22 1.68"/><path d="M5 13a10 10 0 0 1 5.24-2.76"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`;
     const ICON_WIFI_ON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>`;
 
-    const TOOLS = [
+  const TOOLS = [
       {
         id: "bento-pdf",
         code: "01 · PDF",
         name: "BENTO PDF",
         desc: "Unir, extraer, ZIP imágenes, Word ↔ PDF, firma visual, censura táctil y cifrado en local.",
         keywords: "unir dividir firmar firma censurar redactar word docx zip contraseña cifrar desbloquear",
-        url: "https://proyektow.github.io/BENTO-PDF/",
+        url: "./pdf/index.html",
         offlineReady: true,
         offlineNote: ""
       },
@@ -533,9 +533,9 @@
         id: "bento-folio",
         code: "02 · ESCÁNER",
         name: "Bento Folio",
-        desc: "Captura y recorta documentos o DNI para exportarlos a PDF.",
-        keywords: "escaner dni carnet documento foto recorte pdf",
-        url: "https://proyektow.github.io/BentoFolio/",
+        desc: "Captura documentos o DNI 2 en 1 en A4 con marca de agua anti-copia inseparable.",
+        keywords: "escaner dni carnet documento foto recorte pdf marca agua proteccion",
+        url: "./folio/index.html",
         offlineReady: true,
         offlineNote: ""
       },
@@ -545,7 +545,7 @@
         name: "Bento Scaner+",
         desc: "Corte doble página, disparo auto al pasar hoja, borrador de dedos y OCR PDF buscable.",
         keywords: "libros apuntes paginas disparo automatico opencv ocr buscable txt",
-        url: "https://proyektow.github.io/Bento_Scanner-/",
+        url: "./scaner/index.html",
         offlineReady: false,
         offlineNote: "Aviso: Bento Scaner+ carga el motor óptico OpenCV y OCR la primera vez; ábrelo con conexión antes de usarlo sin red."
       },
@@ -555,7 +555,7 @@
         name: "Bento Claves",
         desc: "Generador de contraseñas seguras y Vault local cifrado con clave maestra.",
         keywords: "contraseñas passwords vault baul seguridad",
-        url: "https://proyektow.github.io/Bento_claves/",
+        url: "./claves/index.html",
         offlineReady: true,
         offlineNote: ""
       },
@@ -565,7 +565,7 @@
         name: "Bento Notas",
         desc: "Bloc instantáneo, fichas de usuarios/DNI/teléfono y listas reutilizables.",
         keywords: "notas texto listas tareas apuntes",
-        url: "https://proyektow.github.io/Bento_Notas/",
+        url: "./notas/index.html",
         offlineReady: true,
         offlineNote: ""
       },
@@ -575,7 +575,7 @@
         name: "Bento GPS",
         desc: "Mapa callejero offline, rutas GPX, altímetro, parquímetro OTA, QR y radar direccional.",
         keywords: "coche aparcamiento ota parquimetro ruta gpx altimetro brujula mapa",
-        url: "https://proyektow.github.io/Bento_GPS/",
+        url: "./gps/index.html",
         offlineReady: false,
         offlineNote: "Aviso: El radar direccional y las zonas de mapa guardadas funcionan sin datos, pero descargar cuadrantes nuevos requiere red."
       },
@@ -585,7 +585,7 @@
         name: "Bento Voz",
         desc: "Grabadora local con visualización de onda, marcadores de minuto y descarga WAV.",
         keywords: "audio grabadora microfono voz wav",
-        url: "https://proyektow.github.io/Bento_Voz/",
+        url: "./voz/index.html",
         offlineReady: true,
         offlineNote: ""
       },
@@ -595,7 +595,7 @@
         name: "Bento Transfer",
         desc: "Pasa textos, portapapeles en vivo y múltiples archivos entre móvil y PC sin nube.",
         keywords: "enviar archivos fotos p2p pin qr portapapeles wifi hotspot",
-        url: "https://proyektow.github.io/Bento_Transfer/",
+        url: "./transfer/index.html",
         offlineReady: true,
         offlineNote: ""
       },
@@ -605,7 +605,7 @@
         name: "Bento Count",
         desc: "Gastos e ingresos, tope mensual, huchas de ahorro, evolución anual, #etiquetas y CSV.",
         keywords: "bentocount dinero cuentas gastos ingresos presupuesto ahorro huchas excel csv",
-        url: "https://proyektow.github.io/Bento_Count/",
+        url: "./count/index.html",
         offlineReady: true,
         offlineNote: ""
       },
@@ -615,7 +615,7 @@
         name: "Bento Nutri",
         desc: "Escáner EAN, tabla nutricional, OCR de etiqueta, comparador y alternativas por súper.",
         keywords: "bentonutri supermercado comida calorias ingredientes mercadona lidl carrefour ocr",
-        url: "https://proyektow.github.io/Bento_Nutri/",
+        url: "./nutri/index.html",
         offlineReady: false,
         offlineNote: "Aviso: Consultar productos nuevos requiere conexión a internet; tu historial y listas sí funcionan sin cobertura."
       }
