@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#f5f5f3" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-  <title>BentoNutri · Etiqueta, OCR, Comparador y Listas</title>
+  <title>BentoNutri · Etiqueta, OCR, Carro, Tickets, Despensa y Listas</title>
 
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
@@ -40,8 +40,8 @@
 
     .container {
       width: 100%;
-      max-width: 860px;
-      padding: 20px 14px 56px;
+      max-width: 880px;
+      padding: 20px 14px 110px;
       display: flex;
       flex-direction: column;
       gap: 15px;
@@ -87,7 +87,7 @@
 
     .tabs {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 6px;
     }
 
@@ -97,7 +97,7 @@
       color: var(--ink);
       padding: 10px 6px;
       font-family: var(--mono);
-      font-size: 0.65rem;
+      font-size: 0.63rem;
       font-weight: 700;
       text-transform: uppercase;
       cursor: pointer;
@@ -235,6 +235,57 @@
     }
 
     .personal-alert-box.show { display: block; }
+
+    /* Caja de Precio Unitario (€/kg o €/L) e Inflación Personal */
+    .price-unit-box {
+      background: var(--bg);
+      border: 1px solid var(--ink);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .price-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      align-items: end;
+    }
+
+    .unit-highlight {
+      background: var(--surface);
+      border: 1px solid var(--ink);
+      padding: 8px 10px;
+      font-family: var(--mono);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .inflation-badge {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 6px 9px;
+      border-left: 4px solid var(--ok);
+      background: #eaf7ee;
+      color: var(--ok);
+    }
+
+    .inflation-badge.up {
+      border-left-color: var(--accent);
+      background: #fdecea;
+      color: var(--accent);
+    }
+
+    .inflation-badge.same {
+      border-left-color: var(--muted);
+      background: var(--surface);
+      color: var(--muted);
+    }
 
     /* Cabecera producto */
     .product-header {
@@ -418,15 +469,36 @@
       border-bottom: 1px solid var(--accent);
     }
 
-    /* Alternativas y Listas */
+    /* Alternativas, Listas y Pasillos */
     .alt-list {
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
 
-    .alt-item {
+    .aisle-group {
+      border: 1px solid var(--ink);
       background: var(--bg);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .aisle-header {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--ink);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .alt-item {
+      background: var(--surface);
       border: 1px solid var(--ink);
       border-left: 4px solid var(--ok);
       padding: 10px 12px;
@@ -471,6 +543,19 @@
     .cmp-win { color: var(--ok); font-weight: 800; }
     .cmp-lose { color: var(--accent); }
 
+    /* Despensa y caducidades */
+    .expiry-pill {
+      font-family: var(--mono);
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 3px 7px;
+      border: 1px solid var(--ink);
+      text-transform: uppercase;
+    }
+    .expiry-ok { background: #eaf7ee; color: var(--ok); border-color: var(--ok); }
+    .expiry-soon { background: #fef6e7; color: #9a5304; border-color: var(--warn); }
+    .expiry-expired { background: #fdecea; color: var(--accent); border-color: var(--accent); }
+
     /* Perfil dietético checkboxes */
     .pref-grid {
       display: grid;
@@ -498,9 +583,73 @@
       accent-color: var(--accent);
     }
 
+    /* Barra Flotante de Carro en Vivo */
+    .live-cart-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--ink);
+      color: var(--surface);
+      border-top: 3px solid var(--ok);
+      padding: 10px 14px;
+      z-index: 45;
+      display: flex;
+      justify-content: center;
+    }
+
+    .live-cart-bar.warn-limit {
+      border-top-color: var(--warn);
+      background: #2b1d07;
+    }
+
+    .live-cart-bar.over-limit {
+      border-top-color: var(--accent);
+      background: #330b05;
+    }
+
+    .live-cart-inner {
+      width: 100%;
+      max-width: 880px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+    }
+
+    /* Modal Carro en Vivo */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 17, 17, 0.78);
+      z-index: 60;
+      padding: 14px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      background: var(--bg);
+      border: 2px solid var(--ink);
+      width: 100%;
+      max-width: 580px;
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
     .toast {
       position: fixed;
-      bottom: 16px;
+      bottom: 66px;
       left: 50%;
       transform: translateX(-50%);
       background: var(--ink);
@@ -509,15 +658,16 @@
       padding: 10px 16px;
       font-family: var(--mono);
       font-size: 0.72rem;
-      z-index: 50;
+      z-index: 70;
       display: none;
     }
 
     .toast.show { display: block; }
 
-    @media (max-width: 600px) {
+    @media (max-width: 640px) {
       .tabs { grid-template-columns: repeat(2, 1fr); }
       .pref-grid { grid-template-columns: 1fr; }
+      .price-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -526,20 +676,21 @@
     <header>
       <div class="brand">
         <h1><span>BENTO</span> NUTRI</h1>
-        <p>Etiqueta · OCR · Buscador · Comparador · Listas</p>
+        <p>Escáner · Precio/Kg · Carro · Tickets · Despensa · Listas</p>
       </div>
-      <div class="badge-net">● Cámara + API + OCR</div>
+      <div class="badge-net">● Cámara + API + OCR + Carro</div>
     </header>
 
     <nav class="tabs">
       <button type="button" class="tab-btn active" data-tab="tab-scan">01 · Escáner / Buscar</button>
-      <button type="button" class="tab-btn" data-tab="tab-ocr">02 · OCR Etiqueta</button>
-      <button type="button" class="tab-btn" data-tab="tab-lists">03 · Listas / Historial</button>
-      <button type="button" class="tab-btn" data-tab="tab-prefs">04 · Perfil Alertas</button>
+      <button type="button" class="tab-btn" data-tab="tab-ocr">02 · OCR Etiqueta / Ticket</button>
+      <button type="button" class="tab-btn" data-tab="tab-lists">03 · Listas / Súper</button>
+      <button type="button" class="tab-btn" data-tab="tab-pantry">04 · Mi Despensa</button>
+      <button type="button" class="tab-btn" data-tab="tab-prefs">05 · Perfil Alertas</button>
     </nav>
 
     <!-- ===================================================================== -->
-    <!-- 01 · ESCÁNER CÓDIGO DE BARRAS + BUSCADOR POR TEXTO + COMPARADOR       -->
+    <!-- 01 · ESCÁNER CÓDIGO DE BARRAS + PRECIO/KG + INFLACIÓN + COMPARADOR    -->
     <!-- ===================================================================== -->
     <section class="panel active" id="tab-scan">
       <div class="card">
@@ -606,10 +757,41 @@
               <span class="score-pill" id="badgeCode">EAN: —</span>
             </div>
             <div class="row" style="margin-top:10px;">
-              <button type="button" class="btn btn-ok" id="btnSaveApproved" style="padding:6px 10px; font-size:0.62rem;">+ Aprobado / Lista Compra</button>
-              <button type="button" class="btn" id="btnSaveBlacklisted" style="padding:6px 10px; font-size:0.62rem;">✕ Descartar (Lista Negra)</button>
+              <button type="button" class="btn btn-accent" id="btnAddToCart" style="padding:6px 10px; font-size:0.62rem;">+ Meter al Carro</button>
+              <button type="button" class="btn btn-ok" id="btnSaveApproved" style="padding:6px 10px; font-size:0.62rem;">+ Lista Compra</button>
+              <button type="button" class="btn" id="btnSaveBlacklisted" style="padding:6px 10px; font-size:0.62rem;">✕ Lista Negra</button>
             </div>
           </div>
+        </div>
+
+        <!-- CALCULADORA DE PRECIO POR KILO / LITRO E INFLACIÓN PERSONAL -->
+        <div class="price-unit-box">
+          <span class="section-tag">Precio Real (€/kg o €/L) e Histórico de Precios</span>
+          <div class="price-grid">
+            <div>
+              <label style="font-family:var(--mono); font-size:0.6rem; font-weight:700;">Precio envase (€)</label>
+              <input type="number" id="prodPriceInput" class="input" step="0.01" min="0" placeholder="Ej: 2.45" />
+            </div>
+            <div>
+              <label style="font-family:var(--mono); font-size:0.6rem; font-weight:700;">Peso / Volumen neto</label>
+              <input type="number" id="prodNetWeightInput" class="input" step="1" min="1" placeholder="Ej: 500" />
+            </div>
+            <div>
+              <label style="font-family:var(--mono); font-size:0.6rem; font-weight:700;">Unidad</label>
+              <select id="prodNetUnitSelect">
+                <option value="g">Gramos (g)</option>
+                <option value="kg">Kilos (kg)</option>
+                <option value="ml">Mililitros (ml)</option>
+                <option value="l">Litros (L)</option>
+                <option value="ud">Unidades (ud)</option>
+              </select>
+            </div>
+          </div>
+          <div class="unit-highlight">
+            <span style="font-size:0.74rem;">Coste real: <strong id="unitPriceResult" style="font-size:0.9rem; color:var(--accent);">—</strong></span>
+            <button type="button" class="btn btn-ok" id="btnRecordPrice" style="padding:5px 10px; font-size:0.62rem;">Guardar Precio en Histórico</button>
+          </div>
+          <div id="inflationBadgeBox" style="display:none;"></div>
         </div>
 
         <!-- TABLA NUTRICIONAL OFICIAL COMPLETA TIPO ENVASE -->
@@ -661,7 +843,7 @@
         <!-- Tabla comparativa cara a cara -->
         <div class="compare-box" id="compareBox">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="section-tag">Comparativa Nutricional (por 100 g)</span>
+            <span class="section-tag">Comparativa Nutricional y Precio/Kg</span>
             <button type="button" class="btn" id="btnCloseCompare" style="padding:4px 8px; font-size:0.6rem;">Cerrar</button>
           </div>
           <table class="nutri-table" id="compareTable"></table>
@@ -670,13 +852,14 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- 02 · ESCÁNER OCR DE ETIQUETA (PRODUCTOS NUEVOS O SIN CÓDIGO)          -->
+    <!-- 02 · ESCÁNER OCR DE ETIQUETA Y TICKET DE COMPRA                       -->
     <!-- ===================================================================== -->
     <section class="panel" id="tab-ocr">
+      <!-- Bloque A: OCR de Ingredientes -->
       <div class="card">
-        <span class="section-tag">Lector OCR de Ingredientes (Para productos no registrados)</span>
+        <span class="section-tag">Lector OCR de Ingredientes (Para productos sin código)</span>
         <p class="desc-text">
-          Haz una foto nítida a la lista de ingredientes del envase o pega el texto. BentoNutri detectará automáticamente azúcares ocultos, aceites refinados, aditivos críticos y alertas de tu perfil.
+          Haz una foto nítida a la lista de ingredientes del envase o pega el texto. BentoNutri detectará azúcares ocultos, aceites refinados, aditivos críticos y alertas de tu perfil.
         </p>
 
         <div class="row">
@@ -684,10 +867,10 @@
             Fotografiar / Subir Etiqueta
             <input type="file" id="ocrImageInput" accept="image/*" capture="environment" hidden />
           </label>
-          <span class="desc-text" id="ocrStatusText">Listo para analizar imagen.</span>
+          <span class="desc-text" id="ocrStatusText">Listo para analizar etiqueta.</span>
         </div>
 
-        <textarea id="ocrTextArea" rows="5" class="input" placeholder="Aquí aparecerá el texto leído de la foto (también puedes escribir o pegar ingredientes manualmente)..."></textarea>
+        <textarea id="ocrTextArea" rows="4" class="input" placeholder="Aquí aparecerá el texto leído de la etiqueta (también puedes escribir o pegar ingredientes manualmente)..."></textarea>
 
         <div class="row">
           <button type="button" class="btn btn-accent" id="btnAnalyzeOcrText">Analizar Ingredientes</button>
@@ -702,15 +885,68 @@
           <div class="ingredients-box" id="ocrHighlightedText"></div>
         </div>
       </div>
+
+      <!-- Bloque B: Escáner OCR de Ticket de Compra -->
+      <div class="card">
+        <span class="section-tag">Escáner OCR de Ticket de Supermercado</span>
+        <p class="desc-text">
+          Fotografía el ticket al salir de caja. Extrae artículos y precios para guardar el histórico y pasar los productos a tu Despensa o al resumen de compra.
+        </p>
+
+        <div class="row">
+          <label class="btn btn-ok" style="cursor:pointer;">
+            Fotografiar / Subir Ticket
+            <input type="file" id="ticketImageInput" accept="image/*" capture="environment" hidden />
+          </label>
+          <span class="desc-text" id="ticketStatusText">Listo para leer ticket.</span>
+        </div>
+
+        <textarea id="ticketRawText" rows="4" class="input" placeholder="Texto del ticket (ej: LECHE ENTERA 1L   1,15)..."></textarea>
+        <div class="row">
+          <button type="button" class="btn btn-accent" id="btnParseTicket">Extraer Líneas y Total</button>
+        </div>
+
+        <div id="ticketParsedBox" style="display:none; flex-direction:column; gap:10px; padding-top:8px; border-top:1px solid var(--border);">
+          <div class="unit-highlight">
+            <span>Total detectado en ticket: <strong id="ticketTotalAmount" style="font-size:0.95rem; color:var(--accent);">0.00 €</strong></span>
+            <div class="row">
+              <button type="button" class="btn btn-ok" id="btnTicketToPantry" style="padding:5px 9px; font-size:0.62rem;">+ Todo a Despensa</button>
+              <button type="button" class="btn" id="btnCopyTicketSummary" style="padding:5px 9px; font-size:0.62rem;">Copiar Resumen</button>
+            </div>
+          </div>
+          <div class="alt-list" id="ticketItemsList"></div>
+        </div>
+      </div>
     </section>
 
     <!-- ===================================================================== -->
-    <!-- 03 · LISTAS INTELIGENTES (APROBADOS, DESCARTADOS E HISTORIAL)         -->
+    <!-- 03 · LISTAS INTELIGENTES POR PASILLOS Y REPARTO DE SUPERMERCADO       -->
     <!-- ===================================================================== -->
     <section class="panel" id="tab-lists">
       <div class="card">
-        <span class="section-tag">✓ Lista de la Compra / Productos Aprobados</span>
-        <p class="desc-text">Productos saludables guardados para repetir en tu próxima compra (disponible sin cobertura).</p>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span class="section-tag">✓ Lista de la Compra Inteligente (Por Pasillos)</span>
+          <div class="row">
+            <button type="button" class="btn btn-accent" id="btnCalcBestSuper" style="padding:5px 9px; font-size:0.62rem;">¿Dónde sale más barata?</button>
+          </div>
+        </div>
+        <p class="desc-text">Organizada automáticamente por secciones del súper y con tu mejor precio registrado.</p>
+
+        <!-- Añadir ítem manual rápido a la lista -->
+        <div class="row">
+          <input type="text" id="manualListItemInput" class="input" style="flex:2; min-width:150px;" placeholder="Añadir producto rápido (ej: Pechuga pollo, Tomates)..." />
+          <select id="manualListAisleSelect" style="flex:1; min-width:130px;">
+            <option value="Fruta y Verdura">Fruta y Verdura</option>
+            <option value="Frescos y Carnes">Frescos y Carnes</option>
+            <option value="Lácteos y Huevos">Lácteos y Huevos</option>
+            <option value="Despensa">Despensa</option>
+            <option value="Congelados">Congelados</option>
+            <option value="Limpieza y Hogar">Limpieza y Hogar</option>
+          </select>
+          <button type="button" class="btn btn-ok" id="btnAddManualListItem">+ Añadir</button>
+        </div>
+
+        <div id="bestSuperResultBox" class="inflation-badge" style="display:none;"></div>
         <div class="alt-list" id="approvedList"></div>
       </div>
 
@@ -722,7 +958,7 @@
 
       <div class="card">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-          <span class="section-tag">Historial reciente (Caché Offline)</span>
+          <span class="section-tag">Historial reciente (Caché Offline y Precios)</span>
           <button type="button" class="btn" id="btnClearHistory" style="padding:5px 9px; font-size:0.62rem;">Limpiar historial</button>
         </div>
         <div class="alt-list" id="historyList"></div>
@@ -730,7 +966,33 @@
     </section>
 
     <!-- ===================================================================== -->
-    <!-- 04 · PERFIL DE ALERTAS PERSONALIZADO                                  -->
+    <!-- 04 · MI DESPENSA Y CADUCIDADES EN LOCAL                               -->
+    <!-- ===================================================================== -->
+    <section class="panel" id="tab-pantry">
+      <div class="card">
+        <span class="section-tag">Mi Despensa y Control de Caducidades</span>
+        <p class="desc-text">
+          Consulta lo que tienes en casa antes de bajar a comprar y controla fechas de caducidad para evitar tirar comida.
+        </p>
+
+        <div class="row">
+          <input type="text" id="pantryItemName" class="input" style="flex:2; min-width:150px;" placeholder="Producto en casa (ej: Yogures naturales, Salmón)..." />
+          <select id="pantryExpiryDays" style="flex:1; min-width:140px;">
+            <option value="3">Caduca en 3 días</option>
+            <option value="7" selected>Caduca en 1 semana</option>
+            <option value="15">Caduca en 15 días</option>
+            <option value="30">Caduca en 1 mes</option>
+            <option value="90">Larga duración (3 meses)</option>
+          </select>
+          <button type="button" class="btn btn-accent" id="btnAddPantryManual">+ Guardar en Despensa</button>
+        </div>
+
+        <div class="alt-list" id="pantryList"></div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- 05 · PERFIL DE ALERTAS PERSONALIZADO                                  -->
     <!-- ===================================================================== -->
     <section class="panel" id="tab-prefs">
       <div class="card">
@@ -758,6 +1020,47 @@
         <button type="button" class="btn btn-accent" id="btnSavePrefs">Guardar Perfil de Alertas</button>
       </div>
     </section>
+  </div>
+
+  <!-- BARRA FLOTANTE DE CARRO EN VIVO -->
+  <div class="live-cart-bar" id="liveCartBar">
+    <div class="live-cart-inner">
+      <div>
+        <strong>CARRO EN VIVO:</strong> <span id="cartTotalDisplay">0.00 €</span> (<span id="cartCountDisplay">0</span> uds)
+        <span id="cartBudgetStatus" style="margin-left:6px; opacity:0.85;"></span>
+      </div>
+      <div class="row">
+        <button type="button" class="btn" id="btnOpenCartModal" style="padding:5px 10px; font-size:0.62rem;">Ver Carro / Tope</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DEL CARRO EN VIVO -->
+  <div class="modal-overlay" id="cartModal">
+    <div class="modal-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:8px;">
+        <span class="section-tag" style="font-size:0.8rem;">Carro de la Compra en Vivo</span>
+        <button type="button" class="btn" id="btnCloseCartModal" style="padding:4px 8px; font-size:0.62rem;">Cerrar</button>
+      </div>
+
+      <div class="row">
+        <div style="flex:1;">
+          <label style="font-family:var(--mono); font-size:0.62rem; font-weight:700;">Tope máximo para esta compra (€)</label>
+          <input type="number" id="cartBudgetInput" class="input" step="1" min="0" placeholder="Ej: 45" />
+        </div>
+        <button type="button" class="btn btn-accent" id="btnSaveCartBudget" style="align-self:flex-end;">Fijar Tope</button>
+      </div>
+
+      <div class="alt-list" id="cartItemsList"></div>
+
+      <div class="unit-highlight">
+        <span>Total actual: <strong id="modalCartTotal" style="font-size:0.95rem;">0.00 €</strong></span>
+        <div class="row">
+          <button type="button" class="btn btn-ok" id="btnMoveCartToPantry" style="padding:6px 10px; font-size:0.62rem;">Finalizar → Mover a Despensa</button>
+          <button type="button" class="btn" id="btnClearCart" style="padding:6px 10px; font-size:0.62rem;">Vaciar</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -838,6 +1141,10 @@
     let approvedItems = JSON.parse(localStorage.getItem("bentonutri_approved_v1") || "[]");
     let blacklistedItems = JSON.parse(localStorage.getItem("bentonutri_blacklist_v1") || "[]");
     let userPrefs = JSON.parse(localStorage.getItem("bentonutri_prefs_v1") || "{}");
+    let priceHistory = JSON.parse(localStorage.getItem("bentonutri_prices_v1") || "{}");
+    let liveCart = JSON.parse(localStorage.getItem("bentonutri_cart_v1") || "[]");
+    let cartBudgetLimit = parseFloat(localStorage.getItem("bentonutri_cart_limit_v1") || "0");
+    let pantryItems = JSON.parse(localStorage.getItem("bentonutri_pantry_v1") || "[]");
 
     let currentProduct = null;
     let nativeStream = null;
@@ -848,12 +1155,245 @@
     superSelect.value = localStorage.getItem("bentonutri_super") || "";
     superSelect.onchange = () => {
       localStorage.setItem("bentonutri_super", superSelect.value);
-      if (currentProduct && navigator.onLine && currentProduct.categoriesTags.length) {
-        findSimilarProducts(currentProduct);
+      if (currentProduct) {
+        renderInflationInfo(currentProduct.code);
+        if (navigator.onLine && currentProduct.categoriesTags.length) {
+          findSimilarProducts(currentProduct);
+        }
       }
     };
 
-    // Cargar preferencias en UI
+    // =========================================================================
+    // UTILIDADES DE PESO, PRECIO UNITARIO (€/KG O €/L) E INFLACIÓN PERSONAL
+    // =========================================================================
+    function parseQuantityInfo(qtyStr) {
+      if (!qtyStr) return { amount: 500, unit: "g" };
+      const clean = String(qtyStr).toLowerCase().replace(",", ".");
+      // Detectar multipacks ej. "6 x 125 g" o "4x100g"
+      const multi = clean.match(/(\d+)\s*[x*]\s*(\d+(?:\.\d+)?)\s*(kg|g|gr|ml|cl|l) /);
+      if (multi) {
+        const count = parseFloat(multi[1]);
+        const val = parseFloat(multi[2]);
+        let unit = multi[3];
+        if (unit === "gr") unit = "g";
+        if (unit === "cl") return { amount: count * val * 10, unit: "ml" };
+        return { amount: count * val, unit };
+      }
+      const single = clean.match(/(\d+(?:\.\d+)?)\s*(kg|g|gr|ml|cl|l|ud|uds) /);
+      if (single) {
+        const val = parseFloat(single[1]);
+        let unit = single[2];
+        if (unit === "gr") unit = "g";
+        if (unit === "uds") unit = "ud";
+        if (unit === "cl") return { amount: val * 10, unit: "ml" };
+        return { amount: val, unit };
+      }
+      return { amount: 500, unit: "g" };
+    }
+
+    function computeUnitPrice(price, amount, unit) {
+      if (!price || price <= 0 || !amount || amount <= 0) return null;
+      if (unit === "g") return { val: price / (amount / 1000), label: "€/kg" };
+      if (unit === "kg") return { val: price / amount, label: "€/kg" };
+      if (unit === "ml") return { val: price / (amount / 1000), label: "€/L" };
+      if (unit === "l") return { val: price / amount, label: "€/L" };
+      return { val: price / amount, label: "€/ud" };
+    }
+
+    function updateUnitPriceDisplay() {
+      const price = parseFloat(document.getElementById("prodPriceInput").value);
+      const amount = parseFloat(document.getElementById("prodNetWeightInput").value);
+      const unit = document.getElementById("prodNetUnitSelect").value;
+      const res = computeUnitPrice(price, amount, unit);
+      document.getElementById("unitPriceResult").textContent = res
+        ? `${res.val.toFixed(2)} ${res.label}`
+        : "Introduce precio y peso";
+    }
+
+    document.getElementById("prodPriceInput").oninput = updateUnitPriceDisplay;
+    document.getElementById("prodNetWeightInput").oninput = updateUnitPriceDisplay;
+    document.getElementById("prodNetUnitSelect").onchange = updateUnitPriceDisplay;
+
+    document.getElementById("btnRecordPrice").onclick = () => {
+      if (!currentProduct) return;
+      const price = parseFloat(document.getElementById("prodPriceInput").value);
+      const amount = parseFloat(document.getElementById("prodNetWeightInput").value);
+      const unit = document.getElementById("prodNetUnitSelect").value;
+      if (!price || price <= 0) return notify("Introduce primero el precio en euros.");
+
+      const uInfo = computeUnitPrice(price, amount, unit);
+      const storeKey = superSelect.value || "general";
+      const storeLabel = superSelect.value ? superSelect.options[superSelect.selectedIndex].text : "Súper habitual";
+      const today = new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+
+      if (!priceHistory[currentProduct.code]) priceHistory[currentProduct.code] = [];
+      priceHistory[currentProduct.code].unshift({
+        price,
+        unitPrice: uInfo ? uInfo.val : null,
+        unitLabel: uInfo ? uInfo.label : "",
+        storeKey,
+        storeLabel,
+        date: today
+      });
+      priceHistory[currentProduct.code] = priceHistory[currentProduct.code].slice(0, 20);
+      localStorage.setItem("bentonutri_prices_v1", JSON.stringify(priceHistory));
+
+      renderInflationInfo(currentProduct.code);
+      notify(`Precio (${price.toFixed(2)} €) guardado en tu histórico.`);
+    };
+
+    function renderInflationInfo(code) {
+      const box = document.getElementById("inflationBadgeBox");
+      const records = priceHistory[code] || [];
+      if (!records.length) {
+        box.style.display = "none";
+        return;
+      }
+      box.style.display = "block";
+      const latest = records[0];
+      if (records.length === 1) {
+        box.className = "inflation-badge same";
+        box.textContent = `Último precio guardado: ${latest.price.toFixed(2)} € en ${latest.storeLabel} (${latest.date}).`;
+        return;
+      }
+      const prev = records[1];
+      const diff = latest.price - prev.price;
+      const best = records.reduce((min, r) => (r.price < min.price ? r : min), records[0]);
+
+      if (diff > 0.009) {
+        box.className = "inflation-badge up";
+        box.textContent = `Subió +${diff.toFixed(2)} € respecto a tu compra anterior (${prev.price.toFixed(2)} € en ${prev.storeLabel}, ${prev.date}). Mejor precio histórico: ${best.price.toFixed(2)} € (${best.storeLabel}).`;
+      } else if (diff < -0.009) {
+        box.className = "inflation-badge";
+        box.textContent = `Bajó ${Math.abs(diff).toFixed(2)} € respecto a tu última compra (${prev.price.toFixed(2)} €). ¡Buen precio!`;
+      } else {
+        box.className = "inflation-badge same";
+        box.textContent = `Mismo precio que tu última compra: ${latest.price.toFixed(2)} € en ${latest.storeLabel} (${latest.date}).`;
+      }
+    }
+
+    // =========================================================================
+    // CARRO EN VIVO Y ALERTA DE TOPE
+    // =========================================================================
+    function saveAndRenderCart() {
+      localStorage.setItem("bentonutri_cart_v1", JSON.stringify(liveCart));
+      const total = liveCart.reduce((acc, item) => acc + item.price * item.qty, 0);
+      const count = liveCart.reduce((acc, item) => acc + item.qty, 0);
+
+      document.getElementById("cartTotalDisplay").textContent = `${total.toFixed(2)} €`;
+      document.getElementById("cartCountDisplay").textContent = count;
+      document.getElementById("modalCartTotal").textContent = `${total.toFixed(2)} €`;
+
+      const bar = document.getElementById("liveCartBar");
+      const statusEl = document.getElementById("cartBudgetStatus");
+      bar.classList.remove("warn-limit", "over-limit");
+
+      if (cartBudgetLimit > 0) {
+        const pct = (total / cartBudgetLimit) * 100;
+        statusEl.textContent = `/ Tope ${cartBudgetLimit.toFixed(0)} €`;
+        if (total > cartBudgetLimit) {
+          bar.classList.add("over-limit");
+          statusEl.textContent += " · ¡TOPE SUPERADO!";
+        } else if (pct >= 85) {
+          bar.classList.add("warn-limit");
+          statusEl.textContent += " · Cerca del límite";
+        }
+      } else {
+        statusEl.textContent = "";
+      }
+
+      const listEl = document.getElementById("cartItemsList");
+      listEl.innerHTML = "";
+      if (!liveCart.length) {
+        listEl.innerHTML = `<div class="desc-text">El carro está vacío. Escanea productos y pulsa "+ Meter al Carro".</div>`;
+        return;
+      }
+
+      liveCart.forEach((item, idx) => {
+        const div = document.createElement("div");
+        div.className = "alt-item";
+        div.innerHTML = `
+          <div class="alt-left">
+            <div>
+              <div style="font-weight:800; font-size:0.82rem;">${escapeHtml(item.name)}</div>
+              <div class="desc-text">${item.price.toFixed(2)} € / ud · Subtotal: <strong>${(item.price * item.qty).toFixed(2)} €</strong></div>
+            </div>
+          </div>
+          <div class="row">
+            <button type="button" class="btn" data-dec="${idx}" style="padding:4px 8px;">-</button>
+            <strong style="font-family:var(--mono); font-size:0.78rem;">${item.qty}</strong>
+            <button type="button" class="btn" data-inc="${idx}" style="padding:4px 8px;">+</button>
+            <button type="button" class="btn" data-del="${idx}" style="padding:4px 8px;">✕</button>
+          </div>
+        `;
+        div.querySelector("[data-dec]").onclick = () => {
+          if (liveCart[idx].qty > 1) liveCart[idx].qty--;
+          else liveCart.splice(idx, 1);
+          saveAndRenderCart();
+        };
+        div.querySelector("[data-inc]").onclick = () => {
+          liveCart[idx].qty++;
+          saveAndRenderCart();
+        };
+        div.querySelector("[data-del]").onclick = () => {
+          liveCart.splice(idx, 1);
+          saveAndRenderCart();
+        };
+        listEl.appendChild(div);
+      });
+    }
+
+    document.getElementById("btnAddToCart").onclick = () => {
+      if (!currentProduct) return;
+      const inputPrice = parseFloat(document.getElementById("prodPriceInput").value);
+      const lastSaved = (priceHistory[currentProduct.code] || [])[0]?.price || 0;
+      const finalPrice = !isNaN(inputPrice) && inputPrice > 0 ? inputPrice : lastSaved;
+
+      const existing = liveCart.find((c) => c.code === currentProduct.code);
+      if (existing) {
+        existing.qty++;
+        if (finalPrice > 0) existing.price = finalPrice;
+      } else {
+        liveCart.push({
+          code: currentProduct.code,
+          name: currentProduct.name,
+          price: finalPrice,
+          qty: 1
+        });
+      }
+      saveAndRenderCart();
+      notify(finalPrice > 0 ? `Añadido al carro (${finalPrice.toFixed(2)} €).` : "Añadido al carro (puedes poner su precio arriba).");
+    };
+
+    document.getElementById("btnOpenCartModal").onclick = () => {
+      document.getElementById("cartBudgetInput").value = cartBudgetLimit || "";
+      saveAndRenderCart();
+      document.getElementById("cartModal").classList.add("open");
+    };
+    document.getElementById("btnCloseCartModal").onclick = () => document.getElementById("cartModal").classList.remove("open");
+    document.getElementById("btnSaveCartBudget").onclick = () => {
+      cartBudgetLimit = Math.max(0, parseFloat(document.getElementById("cartBudgetInput").value) || 0);
+      localStorage.setItem("bentonutri_cart_limit_v1", String(cartBudgetLimit));
+      saveAndRenderCart();
+      notify("Tope de compra actualizado.");
+    };
+    document.getElementById("btnClearCart").onclick = () => {
+      liveCart = [];
+      saveAndRenderCart();
+    };
+    document.getElementById("btnMoveCartToPantry").onclick = () => {
+      if (!liveCart.length) return notify("El carro está vacío.");
+      liveCart.forEach((item) => addPantryEntry(item.name, 7));
+      liveCart = [];
+      saveAndRenderCart();
+      document.getElementById("cartModal").classList.remove("open");
+      notify("Compra finalizada y movida a Mi Despensa.");
+    };
+    saveAndRenderCart();
+
+    // =========================================================================
+    // PERFIL DE ALERTAS
+    // =========================================================================
     function loadPrefsUI() {
       document.getElementById("prefNoGluten").checked = !!userPrefs.noGluten;
       document.getElementById("prefNoLactose").checked = !!userPrefs.noLactose;
@@ -906,6 +1446,7 @@
         btn.classList.add("active");
         document.getElementById(btn.dataset.tab).classList.add("active");
         if (btn.dataset.tab === "tab-lists") renderAllLists();
+        if (btn.dataset.tab === "tab-pantry") renderPantryList();
       };
     });
 
@@ -995,7 +1536,6 @@
       if (e.key === "Enter") document.getElementById("btnLookupCode").click();
     });
 
-    // Búsqueda por nombre / texto
     document.getElementById("btnSearchText").onclick = async () => {
       const q = document.getElementById("searchQueryInput").value.trim();
       if (!q) return notify("Escribe el nombre de un producto.");
@@ -1066,6 +1606,16 @@
       };
     }
 
+    function detectAisle(prod) {
+      const txt = `${prod.name} ${(prod.categoriesTags || []).join(" ")}`.toLowerCase();
+      if (/(fruta|verdura|ensalada|tomate|plátano|manzana|zanahoria|patata)/.test(txt)) return "Fruta y Verdura";
+      if (/(carne|pollo|pavo|cerdo|ternera|pescado|salmón|atún|jamón|embutido)/.test(txt)) return "Frescos y Carnes";
+      if (/(leche|yogur|queso|huevo|mantequilla|nata|kéfir)/.test(txt)) return "Lácteos y Huevos";
+      if (/(congelad|helado|pizza congelada)/.test(txt)) return "Congelados";
+      if (/(detergente|lejía|papel higiénico|limpia|jabón)/.test(txt)) return "Limpieza y Hogar";
+      return "Despensa";
+    }
+
     async function fetchProduct(barcode) {
       const cleanCode = barcode.replace(/\D/g, "");
       document.getElementById("barcodeInput").value = cleanCode;
@@ -1119,6 +1669,7 @@
           ingredientsAnalysis: Array.isArray(p.ingredients_analysis_tags) ? p.ingredients_analysis_tags : [],
           nutriments: parseNutriments(p.nutriments)
         };
+        productObj.aisle = detectAisle(productObj);
 
         scanHistory = [productObj, ...scanHistory.filter((item) => item.code !== cleanCode)].slice(0, 60);
         localStorage.setItem("bentonutri_history_v2", JSON.stringify(scanHistory));
@@ -1130,7 +1681,6 @@
       }
     }
 
-    // Comprobar Perfil de Alertas Personalizado
     function checkPersonalAlerts(prod) {
       const hits = [];
       const textAll = `${prod.name} ${prod.ingredients} ${(prod.allergens || []).join(" ")}`.toLowerCase();
@@ -1165,9 +1715,9 @@
     function evaluateHealth(prod) {
       const alerts = [];
       let score = 100;
-      const n = prod.nutriments;
+      const n = prod.nutriments || {};
 
-      if (userPrefs.highProtein && n.proteins !== null && n.proteins >= 15) {
+      if (userPrefs.highProtein && n.proteins !== null && n.proteins !== undefined && n.proteins >= 15) {
         alerts.push({ type: "ok", text: `★ ALTO EN PROTEÍNAS (Tu objetivo): ${n.proteins.toFixed(1)} g por 100 g.` });
       }
 
@@ -1181,7 +1731,7 @@
         alerts.push({ type: "ok", text: `Procesamiento mínimo (NOVA ${prod.nova}): Buen ingrediente base.` });
       }
 
-      if (n.sugars !== null) {
+      if (n.sugars !== null && n.sugars !== undefined) {
         if (n.sugars >= 15) {
           score -= 25;
           alerts.push({ type: "bad", text: `Azúcares altos: ${n.sugars.toFixed(1)} g por 100 g.` });
@@ -1193,7 +1743,7 @@
         }
       }
 
-      if (n.satFat !== null) {
+      if (n.satFat !== null && n.satFat !== undefined) {
         if (n.satFat >= 5) {
           score -= 20;
           alerts.push({ type: "bad", text: `Grasas saturadas elevadas: ${n.satFat.toFixed(1)} g por 100 g.` });
@@ -1202,7 +1752,7 @@
         }
       }
 
-      if (n.salt !== null) {
+      if (n.salt !== null && n.salt !== undefined) {
         if (n.salt >= 1.2) {
           score -= 18;
           alerts.push({ type: "bad", text: `Exceso de sal: ${n.salt.toFixed(2)} g por 100 g.` });
@@ -1301,7 +1851,15 @@
       document.getElementById("compareBox").classList.remove("active");
       document.getElementById("portionGramsInput").value = prod.servingGrams || 100;
 
-      // Alertas personales
+      // Rellenar peso/unidad y último precio conocido
+      const qInfo = parseQuantityInfo(prod.quantity);
+      document.getElementById("prodNetWeightInput").value = qInfo.amount;
+      document.getElementById("prodNetUnitSelect").value = qInfo.unit;
+      const lastPrice = (priceHistory[prod.code] || [])[0]?.price;
+      document.getElementById("prodPriceInput").value = lastPrice ? lastPrice.toFixed(2) : "";
+      updateUnitPriceDisplay();
+      renderInflationInfo(prod.code);
+
       const pHits = checkPersonalAlerts(prod);
       const pBox = document.getElementById("personalAlertBox");
       if (pHits.length) {
@@ -1352,14 +1910,13 @@
       }
     }
 
-    // Guardar en Aprobados o Lista Negra
     document.getElementById("btnSaveApproved").onclick = () => {
       if (!currentProduct) return;
       blacklistedItems = blacklistedItems.filter((x) => x.code !== currentProduct.code);
       approvedItems = [currentProduct, ...approvedItems.filter((x) => x.code !== currentProduct.code)];
       localStorage.setItem("bentonutri_approved_v1", JSON.stringify(approvedItems));
       localStorage.setItem("bentonutri_blacklist_v1", JSON.stringify(blacklistedItems));
-      notify("Guardado en Aprobados / Lista de la Compra.");
+      notify("Guardado en Lista de la Compra (organizado por pasillo).");
     };
 
     document.getElementById("btnSaveBlacklisted").onclick = () => {
@@ -1486,7 +2043,7 @@
     document.getElementById("btnCloseCompare").onclick = () => document.getElementById("compareBox").classList.remove("active");
 
     // =========================================================================
-    // 02 · ESCÁNER OCR DE ETIQUETA (TESSERACT.JS)
+    // 02 · ESCÁNER OCR DE ETIQUETA Y TICKET DE COMPRA
     // =========================================================================
     document.getElementById("ocrImageInput").onchange = async (e) => {
       const file = e.target.files[0];
@@ -1496,7 +2053,7 @@
         status.textContent = "Motor OCR no cargado. Pega el texto manualmente.";
         return;
       }
-      status.textContent = "Leyendo ingredientes de la imagen (puede tardar unos segundos)...";
+      status.textContent = "Leyendo ingredientes de la imagen...";
       try {
         const res = await Tesseract.recognize(file, "spa");
         const cleanText = res.data.text.replace(/\s+/g, " ").trim();
@@ -1525,7 +2082,6 @@
       box.style.display = "flex";
       const lower = rawText.toLowerCase();
 
-      // Comprobar perfil personal
       const pHits = checkPersonalAlerts({ name: "", ingredients: rawText, allergens: [], nutriments: {} });
       const pBox = document.getElementById("ocrPersonalAlert");
       if (pHits.length) {
@@ -1535,13 +2091,12 @@
         pBox.classList.remove("show");
       }
 
-      // Buscar ingredientes críticos y códigos E-XXX
       const foundAlerts = [];
       CRITICAL_KEYWORDS.forEach((kw) => {
         if (lower.includes(kw)) foundAlerts.push({ bad: true, text: `Ingrediente crítico detectado: ${kw.toUpperCase()}` });
       });
 
-      const eMatches = rawText.match(/\bE-?\s?\d{3}[a-z]?\b/gi) || [];
+      const eMatches = rawText.match(/ E-?\s?\d{3}[a-z]? /gi) || [];
       [...new Set(eMatches.map((m) => m.toUpperCase().replace(/[\s-]/g, "")))].forEach((code) => {
         const info = ADDITIVES_DB[code];
         if (info) {
@@ -1559,9 +2114,213 @@
       document.getElementById("ocrHighlightedText").innerHTML = highlightCriticalWords(rawText);
     }
 
+    // OCR Ticket de supermercado
+    let lastParsedTicketItems = [];
+    document.getElementById("ticketImageInput").onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const status = document.getElementById("ticketStatusText");
+      if (!window.Tesseract) {
+        status.textContent = "Motor OCR no cargado.";
+        return;
+      }
+      status.textContent = "Extrayendo líneas y precios del ticket...";
+      try {
+        const res = await Tesseract.recognize(file, "spa");
+        document.getElementById("ticketRawText").value = res.data.text;
+        status.textContent = "Ticket leído. Revisa las líneas abajo.";
+        parseTicketLines(res.data.text);
+      } catch (err) {
+        status.textContent = "Error al leer el ticket.";
+      }
+      e.target.value = "";
+    };
+
+    document.getElementById("btnParseTicket").onclick = () => {
+      const raw = document.getElementById("ticketRawText").value.trim();
+      if (!raw) return notify("Pega o escanea un ticket primero.");
+      parseTicketLines(raw);
+    };
+
+    function parseTicketLines(raw) {
+      const lines = raw.split(/
+?
+/).map((l) => l.trim()).filter(Boolean);
+      const parsed = [];
+      let detectedTotal = null;
+
+      lines.forEach((line) => {
+        const match = line.match(/^(.+?)\s+(\d{1,3}[.,]\d{2})\s*€?$/);
+        if (match) {
+          const label = match[1].trim();
+          const val = parseFloat(match[2].replace(",", "."));
+          if (/total|importe|tarjeta|efectivo|iva|base/i.test(label)) {
+            if (/total/i.test(label)) detectedTotal = val;
+          } else if (val > 0 && val < 300) {
+            parsed.push({ name: label, price: val });
+          }
+        }
+      });
+
+      lastParsedTicketItems = parsed;
+      const sumItems = parsed.reduce((acc, i) => acc + i.price, 0);
+      const finalTotal = detectedTotal !== null ? detectedTotal : sumItems;
+
+      document.getElementById("ticketParsedBox").style.display = "flex";
+      document.getElementById("ticketTotalAmount").textContent = `${finalTotal.toFixed(2)} €`;
+
+      const listEl = document.getElementById("ticketItemsList");
+      listEl.innerHTML = parsed.length
+        ? parsed
+            .map(
+              (item, i) => `
+              <div class="alt-item">
+                <div class="alt-left">
+                  <div>
+                    <div style="font-weight:800; font-size:0.8rem;">${escapeHtml(item.name)}</div>
+                    <div class="desc-text">${item.price.toFixed(2)} €</div>
+                  </div>
+                </div>
+                <button type="button" class="btn" data-t2p="${i}" style="padding:5px 8px; font-size:0.6rem;">+ Despensa</button>
+              </div>`
+            )
+            .join("")
+        : `<div class="desc-text">No se detectaron líneas con formato "Producto   0,00". Puedes editarlas arriba.</div>`;
+
+      listEl.querySelectorAll("[data-t2p]").forEach((btn) => {
+        btn.onclick = () => {
+          const it = parsed[parseInt(btn.dataset.t2p, 10)];
+          addPantryEntry(it.name, 7);
+          notify(`"${it.name}" guardado en Mi Despensa.`);
+        };
+      });
+    }
+
+    document.getElementById("btnTicketToPantry").onclick = () => {
+      if (!lastParsedTicketItems.length) return notify("No hay artículos extraídos.");
+      lastParsedTicketItems.forEach((it) => addPantryEntry(it.name, 7));
+      notify(`${lastParsedTicketItems.length} artículos añadidos a Mi Despensa.`);
+    };
+
+    document.getElementById("btnCopyTicketSummary").onclick = async () => {
+      const total = document.getElementById("ticketTotalAmount").textContent;
+      const text = `Ticket Supermercado (${new Date().toLocaleDateString("es-ES")}): ${total} (${lastParsedTicketItems.length} artículos)`;
+      try {
+        await navigator.clipboard.writeText(text);
+        notify("Resumen copiado al portapapeles.");
+      } catch (e) {
+        notify(text);
+      }
+    };
+
     // =========================================================================
-    // 03 · RENDERIZADO DE LISTAS (APROBADOS, LISTA NEGRA, HISTORIAL)
+    // 03 · LISTAS INTELIGENTES POR PASILLOS Y REPARTO DE SUPERMERCADO
     // =========================================================================
+    document.getElementById("btnAddManualListItem").onclick = () => {
+      const name = document.getElementById("manualListItemInput").value.trim();
+      const aisle = document.getElementById("manualListAisleSelect").value;
+      if (!name) return notify("Escribe el nombre del producto.");
+      approvedItems.unshift({
+        code: "MANUAL-" + Date.now(),
+        name,
+        brand: "Lista rápida",
+        aisle,
+        nutriscore: "?",
+        nutriments: {}
+      });
+      localStorage.setItem("bentonutri_approved_v1", JSON.stringify(approvedItems));
+      document.getElementById("manualListItemInput").value = "";
+      renderAllLists();
+      notify(`Añadido a pasillo "${aisle}".`);
+    };
+
+    document.getElementById("btnCalcBestSuper").onclick = () => {
+      const box = document.getElementById("bestSuperResultBox");
+      box.style.display = "block";
+      const totalsByStore = {};
+      let matchedCount = 0;
+
+      approvedItems.forEach((item) => {
+        const recs = priceHistory[item.code] || [];
+        recs.forEach((r) => {
+          if (!totalsByStore[r.storeLabel]) totalsByStore[r.storeLabel] = { sum: 0, count: 0 };
+          totalsByStore[r.storeLabel].sum += r.price;
+          totalsByStore[r.storeLabel].count += 1;
+        });
+        if (recs.length) matchedCount++;
+      });
+
+      const entries = Object.entries(totalsByStore);
+      if (!entries.length) {
+        box.className = "inflation-badge same";
+        box.textContent = "Aún no tienes precios guardados para los productos de esta lista. Escanea y guarda precios para comparar supermercados.";
+        return;
+      }
+
+      entries.sort((a, b) => a[1].sum - b[1].sum);
+      const summary = entries.map(([st, d]) => `${st}: ${d.sum.toFixed(2)} € (${d.count} prod.)`).join(" · ");
+      box.className = "inflation-badge";
+      box.textContent = `Comparativa con precios guardados (${matchedCount} productos con precio): ${summary}`;
+    };
+
+    function renderApprovedByAisles() {
+      const container = document.getElementById("approvedList");
+      container.innerHTML = "";
+      if (!approvedItems.length) {
+        container.innerHTML = `<div class="desc-text">Aún no has guardado productos en tu lista de la compra.</div>`;
+        return;
+      }
+
+      const groups = {};
+      approvedItems.forEach((item) => {
+        const aisle = item.aisle || detectAisle(item);
+        if (!groups[aisle]) groups[aisle] = [];
+        groups[aisle].push(item);
+      });
+
+      Object.entries(groups).forEach(([aisle, items]) => {
+        const groupBox = document.createElement("div");
+        groupBox.className = "aisle-group";
+        groupBox.innerHTML = `<div class="aisle-header"><span>Pasillo: ${escapeHtml(aisle)}</span><span>${items.length} prod.</span></div>`;
+
+        items.forEach((item) => {
+          const lastP = (priceHistory[item.code] || [])[0];
+          const div = document.createElement("div");
+          div.className = "alt-item";
+          div.innerHTML = `
+            <div class="alt-left">
+              ${item.image ? `<img class="alt-thumb" src="${item.image}" alt="" />` : ""}
+              <div>
+                <div style="font-weight:800; font-size:0.84rem;">${escapeHtml(item.name)}</div>
+                <div class="desc-text">
+                  ${escapeHtml(item.brand)}
+                  ${lastP ? ` · Último: <strong>${lastP.price.toFixed(2)} €</strong> (${escapeHtml(lastP.storeLabel)})` : ""}
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <button type="button" class="btn btn-ok" data-bought="1" style="padding:5px 8px; font-size:0.6rem;">✓ Comprado → Despensa</button>
+              <button type="button" class="btn" data-rm="1" style="padding:5px 8px; font-size:0.6rem;">✕</button>
+            </div>
+          `;
+          div.querySelector("[data-bought]").onclick = () => {
+            addPantryEntry(item.name, 7);
+            approvedItems = approvedItems.filter((x) => x.code !== item.code);
+            localStorage.setItem("bentonutri_approved_v1", JSON.stringify(approvedItems));
+            renderAllLists();
+            notify(`"${item.name}" movido a Mi Despensa.`);
+          };
+          div.querySelector("[data-rm]").onclick = () => {
+            approvedItems = approvedItems.filter((x) => x.code !== item.code);
+            localStorage.setItem("bentonutri_approved_v1", JSON.stringify(approvedItems));
+            renderAllLists();
+          };
+          groupBox.appendChild(div);
+        });
+        container.appendChild(groupBox);
+      });
+    }
+
     function renderProductList(items, containerEl, emptyMsg, allowDeleteFromKey) {
       containerEl.innerHTML = "";
       if (!items.length) {
@@ -1570,6 +2329,7 @@
       }
       items.forEach((item) => {
         const ev = evaluateHealth(item);
+        const lastP = (priceHistory[item.code] || [])[0];
         const div = document.createElement("div");
         div.className = "alt-item" + (ev.level === "bad" ? " bad" : ev.level === "mid" ? " mid" : "");
         div.innerHTML = `
@@ -1577,7 +2337,10 @@
             ${item.image ? `<img class="alt-thumb" src="${item.image}" alt="" />` : ""}
             <div>
               <div style="font-weight:800; font-size:0.84rem;">${escapeHtml(item.name)}</div>
-              <div class="desc-text">${escapeHtml(item.brand)} · Nutri-Score ${item.nutriscore || "?"} · ${ev.score}/100</div>
+              <div class="desc-text">
+                ${escapeHtml(item.brand)} · Nutri-Score ${item.nutriscore || "?"} · ${ev.score}/100
+                ${lastP ? ` · <strong>${lastP.price.toFixed(2)} €</strong>` : ""}
+              </div>
             </div>
           </div>
           <div class="row">
@@ -1592,13 +2355,8 @@
         const rmBtn = div.querySelector("[data-rm]");
         if (rmBtn) {
           rmBtn.onclick = () => {
-            if (allowDeleteFromKey === "approved") {
-              approvedItems = approvedItems.filter((x) => x.code !== item.code);
-              localStorage.setItem("bentonutri_approved_v1", JSON.stringify(approvedItems));
-            } else if (allowDeleteFromKey === "blacklist") {
-              blacklistedItems = blacklistedItems.filter((x) => x.code !== item.code);
-              localStorage.setItem("bentonutri_blacklist_v1", JSON.stringify(blacklistedItems));
-            }
+            blacklistedItems = blacklistedItems.filter((x) => x.code !== item.code);
+            localStorage.setItem("bentonutri_blacklist_v1", JSON.stringify(blacklistedItems));
             renderAllLists();
           };
         }
@@ -1607,7 +2365,7 @@
     }
 
     function renderAllLists() {
-      renderProductList(approvedItems, document.getElementById("approvedList"), "Aún no has guardado productos aprobados.", "approved");
+      renderApprovedByAisles();
       renderProductList(blacklistedItems, document.getElementById("blacklistedList"), "Tu lista negra está vacía.", "blacklist");
       renderProductList(scanHistory, document.getElementById("historyList"), "Aún no has escaneado ningún producto.", null);
     }
@@ -1617,6 +2375,86 @@
       localStorage.removeItem("bentonutri_history_v2");
       renderAllLists();
     };
+
+    // =========================================================================
+    // 04 · MI DESPENSA Y CONTROL DE CADUCIDADES
+    // =========================================================================
+    function addPantryEntry(name, daysToExpire) {
+      const expiresAt = Date.now() + daysToExpire * 86400000;
+      pantryItems.unshift({
+        id: "PANTRY-" + Date.now() + Math.random().toString(36).slice(2, 6),
+        name,
+        expiresAt
+      });
+      localStorage.setItem("bentonutri_pantry_v1", JSON.stringify(pantryItems));
+    }
+
+    document.getElementById("btnAddPantryManual").onclick = () => {
+      const name = document.getElementById("pantryItemName").value.trim();
+      const days = parseInt(document.getElementById("pantryExpiryDays").value, 10) || 7;
+      if (!name) return notify("Escribe el nombre del producto.");
+      addPantryEntry(name, days);
+      document.getElementById("pantryItemName").value = "";
+      renderPantryList();
+      notify("Añadido a Mi Despensa.");
+    };
+
+    function renderPantryList() {
+      const container = document.getElementById("pantryList");
+      container.innerHTML = "";
+      if (!pantryItems.length) {
+        container.innerHTML = `<div class="desc-text">Tu despensa está vacía. Añade productos manualmente o finaliza una compra desde el Carro.</div>`;
+        return;
+      }
+
+      const sorted = [...pantryItems].sort((a, b) => a.expiresAt - b.expiresAt);
+      sorted.forEach((item) => {
+        const diffDays = Math.ceil((item.expiresAt - Date.now()) / 86400000);
+        let badgeCls = "expiry-ok";
+        let badgeTxt = `Quedan ${diffDays} días`;
+        if (diffDays < 0) {
+          badgeCls = "expiry-expired";
+          badgeTxt = `Caducado hace ${Math.abs(diffDays)} d.`;
+        } else if (diffDays <= 3) {
+          badgeCls = "expiry-soon";
+          badgeTxt = diffDays === 0 ? "Caduca HOY" : `Caduca en ${diffDays} d.`;
+        }
+
+        const div = document.createElement("div");
+        div.className = "alt-item" + (diffDays < 0 ? " bad" : diffDays <= 3 ? " mid" : "");
+        div.innerHTML = `
+          <div class="alt-left">
+            <div>
+              <div style="font-weight:800; font-size:0.84rem;">${escapeHtml(item.name)}</div>
+              <div class="desc-text">Fecha límite: ${new Date(item.expiresAt).toLocaleDateString("es-ES")}</div>
+            </div>
+          </div>
+          <div class="row">
+            <span class="expiry-pill ${badgeCls}">${badgeTxt}</span>
+            <button type="button" class="btn" data-relist="1" style="padding:5px 8px; font-size:0.6rem;">+ Reponer en Lista</button>
+            <button type="button" class="btn" data-consume="1" style="padding:5px 8px; font-size:0.6rem;">Consumido ✕</button>
+          </div>
+        `;
+        div.querySelector("[data-relist]").onclick = () => {
+          approvedItems.unshift({
+            code: "RELIST-" + Date.now(),
+            name: item.name,
+            brand: "Reposición despensa",
+            aisle: detectAisle({ name: item.name }),
+            nutriscore: "?",
+            nutriments: {}
+          });
+          localStorage.setItem("bentonutri_approved_v1", JSON.stringify(approvedItems));
+          notify(`"${item.name}" añadido a tu Lista de la Compra.`);
+        };
+        div.querySelector("[data-consume]").onclick = () => {
+          pantryItems = pantryItems.filter((x) => x.id !== item.id);
+          localStorage.setItem("bentonutri_pantry_v1", JSON.stringify(pantryItems));
+          renderPantryList();
+        };
+        container.appendChild(div);
+      });
+    }
 
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, (m) => ({
