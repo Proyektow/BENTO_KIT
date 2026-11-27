@@ -50,6 +50,27 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  const isHtml =
+    event.request.mode === "navigate" ||
+    event.request.destination === "document" ||
+    url.endsWith("/") ||
+    url.endsWith(".html");
+
+  if (isHtml) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkRes) => {
+          if (networkRes && networkRes.status === 200) {
+            const clone = networkRes.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return networkRes;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetchPromise = fetch(event.request)
