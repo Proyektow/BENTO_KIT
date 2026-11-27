@@ -1,4 +1,4 @@
-const CACHE_NAME = "bento-nutri-v4";
+const CACHE_NAME = "bento-nutri-v5";
 
 const LOCAL_ASSETS = [
   "./",
